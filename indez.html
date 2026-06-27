@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fútbol Lab — Mundial 2026</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #111827;
+    --panel2: #1a2236;
+    --border: #1e2d45;
+    --accent: #22c55e;
+    --accent2: #16a34a;
+    --gold: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --arg: #74b9ff;
+    --del: #ef4444;
+    --med: #f59e0b;
+    --por: #22c55e;
+    --pitch-brightness: 1;
+  }
+  body.light-mode {
+    --bg: #e8f0e9;
+    --panel: #f5f7f5;
+    --panel2: #e0e8e1;
+    --border: #c5d5c6;
+    --text: #1a2e1b;
+    --muted: #5a7a5b;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+
+  /* ─── HEADER ─── */
+  #header {
+    display:flex; align-items:center; gap:16px;
+    background:var(--panel); border-bottom:1px solid var(--border);
+    padding:0 20px; height:64px; flex-shrink:0; z-index:100; position:relative;
+  }
+  #logo { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  #logo .cup { font-size:26px; }
+  #logo .title-block { line-height:1.1; }
+  #logo .title-main { font-size:15px; font-weight:800; letter-spacing:2px; color:#fff; }
+  #logo .title-sub { font-size:11px; font-weight:700; color:var(--gold); letter-spacing:1px; }
+  #matchup { display:flex; align-items:center; gap:12px; flex:1; justify-content:center; }
+  .team-select-box {
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+    padding:6px 12px; cursor:pointer; min-width:180px; position:relative;
+  }
+  .team-select-box .flag { font-size:22px; }
+  .team-select-box .name { font-weight:700; font-size:14px; letter-spacing:1px; color:#fff; flex:1; }
+  .team-select-box .chevron { color:var(--muted); font-size:12px; }
+  .vs-badge {
+    background:var(--panel2); border:1px solid var(--border);
+    border-radius:6px; padding:4px 14px; font-weight:900; font-size:13px;
+    color:var(--muted); letter-spacing:2px;
+  }
+  #header-actions { display:flex; align-items:center; gap:8px; }
+  .hbtn {
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:none; border:none; color:var(--muted); cursor:pointer;
+    padding:6px 10px; border-radius:6px; font-size:11px; transition:.15s;
+  }
+  .hbtn:hover { background:var(--panel2); color:var(--text); }
+  .hbtn .icon { font-size:20px; }
+
+  /* ─── TEAM DROPDOWN ─── */
+  .team-dropdown {
+    position:absolute; top:calc(100% + 6px); left:0; right:0;
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    max-height:280px; overflow-y:auto; z-index:999; display:none;
+    box-shadow:0 8px 32px rgba(0,0,0,.6);
+  }
+  .team-dropdown.open { display:block; }
+  .team-dropdown input {
+    width:100%; background:var(--panel2); border:none; border-bottom:1px solid var(--border);
+    color:var(--text); padding:8px 12px; font-size:13px; outline:none;
+  }
+  .team-dropdown .team-opt {
+    display:flex; align-items:center; gap:8px; padding:7px 12px;
+    cursor:pointer; font-size:13px; transition:.1s;
+  }
+  .team-dropdown .team-opt:hover { background:var(--panel2); }
+  .team-dropdown .team-opt .f { font-size:16px; }
+
+  /* ─── LAYOUT ─── */
+  #app { display:flex; height:calc(100vh - 64px); }
+  #left-panel {
+    width:248px; flex-shrink:0;
+    background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  #center { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  #right-panel {
+    width:220px; flex-shrink:0;
+    background:var(--panel); border-left:1px solid var(--border);
+    display:flex; flex-direction:column; padding:16px 14px; gap:14px; overflow-y:auto;
+  }
+
+  /* ─── LEFT PANEL ─── */
+  #left-panel h3 {
+    padding:12px 14px 4px; font-size:11px; font-weight:700; letter-spacing:2px;
+    color:var(--muted); text-transform:uppercase;
+  }
+  #player-search-wrap { padding:6px 12px; }
+  #player-search {
+    width:100%; background:var(--panel2); border:1px solid var(--border);
+    border-radius:6px; color:var(--text); padding:7px 10px 7px 30px;
+    font-size:12px; outline:none;
+  }
+  #player-search-wrap { position:relative; }
+  #player-search-wrap::before {
+    content:'🔍'; position:absolute; left:20px; top:50%; transform:translateY(-50%);
+    font-size:12px; pointer-events:none;
+  }
+  #filter-tabs { display:flex; gap:4px; padding:6px 12px; }
+  .ftab {
+    flex:1; background:var(--panel2); border:1px solid var(--border);
+    border-radius:6px; color:var(--muted); padding:4px 0; font-size:11px;
+    font-weight:700; cursor:pointer; text-align:center; transition:.15s; letter-spacing:.5px;
+  }
+  .ftab.active { background:var(--accent2); border-color:var(--accent); color:#fff; }
+  #player-list { flex:1; overflow-y:auto; padding:4px 0; }
+  .player-row {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 14px; cursor:grab; transition:.1s; user-select:none;
+  }
+  .player-row:hover { background:var(--panel2); }
+  .player-row.dragging { opacity:.4; }
+  .player-row .pnum { font-size:11px; color:var(--muted); width:18px; text-align:right; font-weight:600; }
+  .player-row .pflag { font-size:14px; }
+  .player-row .pname { flex:1; font-size:12px; font-weight:600; }
+  .player-row .ppos {
+    font-size:10px; font-weight:700; padding:2px 5px; border-radius:4px;
+    letter-spacing:.5px;
+  }
+  .ppos.POR { background:#1e3a2f; color:var(--accent); }
+  .ppos.DEF { background:#1a2d4a; color:#60a5fa; }
+  .ppos.MED { background:#3a2a00; color:var(--gold); }
+  .ppos.DEL { background:#3a1a1a; color:var(--del); }
+  #drag-hint {
+    padding:10px 14px; display:flex; align-items:center; gap:8px;
+    color:var(--muted); font-size:11px; border-top:1px solid var(--border); flex-shrink:0;
+  }
+
+  /* ─── PITCH HEADER ─── */
+  #pitch-header {
+    display:flex; align-items:center; gap:10px;
+    padding:8px 14px; background:rgba(0,0,0,.25); border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  #formation-badge {
+    background:rgba(0,0,0,.6); border:1px solid var(--border);
+    border-radius:6px; padding:4px 12px; font-weight:700; font-size:13px; color:#fff;
+    display:flex; align-items:center; gap:6px;
+  }
+  #formation-badge button {
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0;
+  }
+
+  /* ─── PITCH CANVAS ─── */
+  #pitch-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  #pitch-bg {
+    position:absolute; inset:0;
+    background: radial-gradient(ellipse at 50% 50%, #1a5c28 0%, #14471f 40%, #0f3518 100%);
+  }
+  #pitch-svg { position:absolute; width:100%; height:100%; pointer-events:none; }
+  #players-layer { position:absolute; inset:0; }
+
+  /* ─── PLAYER TOKEN ─── */
+  .player-token {
+    position:absolute; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    cursor:pointer; user-select:none; z-index:10; transition:all .35s ease;
+  }
+  .player-token .token-num {
+    width:22px; height:22px; background:#111; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; color:#fff;
+    border:1px solid rgba(255,255,255,.2);
+    position:relative; top:6px; z-index:2;
+  }
+  .player-token .token-shirt {
+    width:48px; height:48px; border-radius:8px; overflow:hidden;
+    border:2px solid rgba(255,255,255,.35);
+    background:linear-gradient(145deg,#1e3a5f,#0f2237);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; position:relative; box-shadow:0 4px 14px rgba(0,0,0,.6);
+  }
+  .player-token .token-name {
+    background:rgba(0,0,0,.78); border-radius:4px;
+    padding:2px 6px; font-size:10px; font-weight:700; color:#fff;
+    white-space:nowrap; max-width:72px; overflow:hidden; text-overflow:ellipsis;
+    letter-spacing:.3px; margin-top:2px;
+  }
+  .player-token:hover .token-shirt { border-color:var(--accent); }
+  .player-token.selected .token-shirt { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold),0 4px 14px rgba(0,0,0,.6); }
+  .player-token.voronoi-active { transition:all .6s cubic-bezier(.34,1.56,.64,1); }
+
+  /* Voronoi overlay */
+  #voronoi-overlay { position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .4s; }
+  #voronoi-overlay.visible { opacity:1; }
+
+  /* ─── BOTTOM BAR ─── */
+  #bottom-bar {
+    display:flex; align-items:center; gap:8px;
+    padding:8px 14px; background:var(--panel); border-top:1px solid var(--border); flex-shrink:0;
+  }
+  #players-placed { font-size:12px; color:var(--muted); margin-right:auto; }
+  .bbtn {
+    display:flex; align-items:center; gap:6px;
+    background:var(--panel2); border:1px solid var(--border);
+    border-radius:7px; padding:7px 14px; color:var(--text);
+    font-size:12px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .bbtn:hover { background:var(--border); }
+  .bbtn.primary { background:var(--accent2); border-color:var(--accent); color:#fff; }
+  .bbtn.primary:hover { background:var(--accent); }
+  #zoom-val { font-size:13px; font-weight:700; color:var(--text); min-width:40px; text-align:center; }
+
+  /* ─── RIGHT PANEL ─── */
+  .rp-section h4 {
+    font-size:11px; font-weight:700; letter-spacing:2px; color:var(--muted);
+    text-transform:uppercase; margin-bottom:8px;
+  }
+  #formation-select {
+    width:100%; background:var(--panel2); border:1px solid var(--border);
+    border-radius:7px; color:var(--text); padding:7px 10px;
+    font-size:13px; font-weight:600; outline:none; cursor:pointer;
+  }
+  #mini-pitch { width:100%; height:80px; margin-top:8px; position:relative; }
+  #mini-pitch svg { width:100%; height:100%; }
+  .mini-nav {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:6px;
+  }
+  .mini-nav button {
+    background:var(--panel2); border:1px solid var(--border);
+    border-radius:5px; color:var(--text); width:26px; height:26px; cursor:pointer;
+    font-size:14px; display:flex; align-items:center; justify-content:center;
+  }
+  .mini-nav button:hover { background:var(--border); }
+  .mini-nav span { font-size:11px; color:var(--muted); }
+  .tool-btn {
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel2); border:1px solid var(--border);
+    border-radius:7px; padding:8px 12px; cursor:pointer; transition:.15s; width:100%;
+    font-size:12px; font-weight:600; color:var(--text);
+  }
+  .tool-btn:hover { background:var(--border); }
+  .tool-btn.active { background:var(--accent2); border-color:var(--accent); color:#fff; }
+  .tool-btn .ti { font-size:16px; }
+  .view-toggle { display:flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+  .vtbtn {
+    flex:1; padding:7px 0; text-align:center; font-size:12px; font-weight:700;
+    cursor:pointer; background:var(--panel2); color:var(--muted); transition:.15s;
+  }
+  .vtbtn.active { background:var(--accent2); color:#fff; }
+  .opt-row { display:flex; align-items:center; justify-content:space-between; padding:2px 0; }
+  .opt-row label { font-size:12px; color:var(--text); }
+  .toggle-sw {
+    width:38px; height:20px; background:var(--accent); border-radius:10px;
+    position:relative; cursor:pointer; transition:.2s;
+  }
+  .toggle-sw::after {
+    content:''; position:absolute; width:14px; height:14px; background:#fff;
+    border-radius:50%; top:3px; right:3px; transition:.2s;
+  }
+  .toggle-sw.off { background:var(--border); }
+  .toggle-sw.off::after { right:auto; left:3px; }
+
+  /* ─── CONTEXT MENU ─── */
+  #ctx-menu {
+    position:fixed; background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; padding:4px 0; z-index:9999; display:none; min-width:140px;
+    box-shadow:0 8px 32px rgba(0,0,0,.6);
+  }
+  #ctx-menu .cm-item {
+    padding:8px 16px; font-size:12px; cursor:pointer; transition:.1s;
+    display:flex; align-items:center; gap:8px;
+  }
+  #ctx-menu .cm-item:hover { background:var(--panel2); }
+  #ctx-menu .cm-item.danger { color:var(--del); }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* grass stripes - vertical para cancha horizontal */
+  #pitch-bg::after {
+    content:''; position:absolute; inset:0;
+    background:repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 36px,
+      rgba(0,0,0,.12) 36px, rgba(0,0,0,.12) 72px
+    );
+    pointer-events:none;
+  }
+
+  .tooltip-overlay {
+    position:fixed; background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px; font-size:12px; z-index:9998;
+    pointer-events:none; display:none; box-shadow:0 4px 16px rgba(0,0,0,.5);
+    max-width:160px;
+  }
+  .tooltip-overlay .tname { font-weight:700; color:#fff; margin-bottom:2px; }
+  .tooltip-overlay .tpos { color:var(--muted); font-size:11px; }
+
+  /* Flash */
+  @keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,.7); }
+    70% { box-shadow: 0 0 0 12px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  .player-token.just-placed .token-shirt { animation: pulse-green .5s ease-out; }
+
+  /* ─── LIGHT/DARK CAPSULE ─── */
+  #theme-toggle {
+    display:flex; align-items:center; gap:0;
+    background:var(--panel2); border:1px solid var(--border);
+    border-radius:999px; overflow:hidden; padding:2px;
+    cursor:pointer; user-select:none;
+  }
+  .theme-opt {
+    padding:4px 12px; border-radius:999px; font-size:11px; font-weight:700;
+    letter-spacing:.5px; transition:.2s; color:var(--muted);
+  }
+  .theme-opt.active { background:var(--accent2); color:#fff; }
+
+  /* ─── BRIGHTNESS SLIDER ─── */
+  #brightness-wrap { display:flex; align-items:center; gap:8px; padding:2px 0; }
+  #brightness-wrap label { font-size:12px; color:var(--text); white-space:nowrap; }
+  #brightness-slider {
+    flex:1; -webkit-appearance:none; height:4px; border-radius:2px;
+    background:linear-gradient(90deg,#0f3518,#4ade80);
+    outline:none; cursor:pointer;
+  }
+  #brightness-slider::-webkit-slider-thumb {
+    -webkit-appearance:none; width:14px; height:14px;
+    border-radius:50%; background:var(--accent); cursor:pointer;
+    border:2px solid #fff;
+  }
+
+  /* ─── PITCH BRIGHTNESS ─── */
+  #pitch-bg { filter: brightness(var(--pitch-brightness)); }
+
+  /* ─── 3D VIEW ─── */
+  #view-3d-overlay {
+    position:absolute; inset:0; z-index:20;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.7); flex-direction:column; gap:16px;
+  }
+  #view-3d-overlay.active { display:flex; }
+  #pitch-3d-wrap {
+    position:relative;
+    perspective:900px;
+    width:85%; max-width:620px;
+  }
+  #pitch-3d-inner {
+    transform: rotateX(52deg) rotateZ(0deg) scale(1.05);
+    transform-style: preserve-3d;
+    position:relative;
+    border-radius:6px; overflow:hidden;
+    box-shadow: 0 60px 80px rgba(0,0,0,0.8);
+  }
+  #pitch-3d-canvas {
+    width:100%; display:block;
+    background: radial-gradient(ellipse at 50% 50%, #1a5c28 0%, #14471f 40%, #0f3518 100%);
+  }
+  #pitch-3d-players { position:absolute; inset:0; }
+  .token-3d {
+    position:absolute; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    pointer-events:none;
+  }
+  .token-3d .t3-shirt {
+    width:32px; height:32px; border-radius:6px;
+    background:linear-gradient(145deg,#1e3a5f,#0f2237);
+    border:2px solid rgba(255,255,255,.5);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; box-shadow:0 4px 10px rgba(0,0,0,.6);
+  }
+  .token-3d .t3-num {
+    font-size:9px; font-weight:700; color:#fff;
+    background:rgba(0,0,0,.7); border-radius:3px; padding:1px 4px;
+  }
+  .token-3d .t3-name {
+    font-size:8px; font-weight:700; color:#fff;
+    background:rgba(0,0,0,.7); border-radius:3px; padding:1px 5px;
+    white-space:nowrap; max-width:60px; overflow:hidden; text-overflow:ellipsis;
+  }
+  #close-3d {
+    background:var(--panel); border:1px solid var(--border);
+    color:var(--text); border-radius:8px; padding:8px 24px;
+    font-size:13px; font-weight:700; cursor:pointer;
+  }
+  #close-3d:hover { background:var(--border); }
+
+  /* ─── FORMATION TEAM PICKER ─── */
+  #formation-team-picker {
+    display:flex; gap:6px; margin-top:8px;
+  }
+  .ftp-btn {
+    flex:1; padding:5px 0; border-radius:6px; font-size:11px; font-weight:700;
+    cursor:pointer; text-align:center; border:1px solid var(--border);
+    background:var(--panel2); color:var(--muted); transition:.15s; letter-spacing:.3px;
+  }
+  .ftp-btn.active { background:var(--accent2); border-color:var(--accent); color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div id="header">
+  <div id="logo">
+    <div class="cup">🏆</div>
+    <div class="title-block">
+      <div class="title-main">FÚTBOL LAB</div>
+      <div class="title-sub">MUNDIAL 2026</div>
+    </div>
+  </div>
+
+  <div id="matchup">
+    <!-- Team A -->
+    <div class="team-select-box" id="team-a-box" onclick="toggleDropdown('a')">
+      <span class="flag" id="flag-a">🇦🇷</span>
+      <span class="name" id="name-a">ARGENTINA</span>
+      <span class="chevron">▼</span>
+      <div class="team-dropdown" id="dropdown-a">
+        <input type="text" placeholder="Buscar equipo..." id="search-a" oninput="filterTeams('a')" onclick="event.stopPropagation()">
+        <div id="opts-a"></div>
+      </div>
+    </div>
+
+    <div class="vs-badge">VS</div>
+
+    <!-- Team B -->
+    <div class="team-select-box" id="team-b-box" onclick="toggleDropdown('b')">
+      <span class="flag" id="flag-b">🇫🇷</span>
+      <span class="name" id="name-b">FRANCIA</span>
+      <span class="chevron">▼</span>
+      <div class="team-dropdown" id="dropdown-b">
+        <input type="text" placeholder="Buscar equipo..." id="search-b" oninput="filterTeams('b')" onclick="event.stopPropagation()">
+        <div id="opts-b"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="header-actions">
+    <div id="theme-toggle" onclick="toggleTheme()">
+      <div class="theme-opt active" id="theme-light">☀ Light</div>
+      <div class="theme-opt" id="theme-dark">🌙 Dark</div>
+    </div>
+    <button class="hbtn" onclick="saveLineup()"><span class="icon">💾</span>Guardar</button>
+    <button class="hbtn" onclick="shareLineup()"><span class="icon">↗</span>Compartir</button>
+    <button class="hbtn"><span class="icon">☰</span>Menú</button>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <h3>JUGADORES</h3>
+    <div id="player-search-wrap">
+      <input type="text" id="player-search" placeholder="Buscar jugador..." oninput="filterPlayers()">
+    </div>
+    <div id="filter-tabs">
+      <div class="ftab active" onclick="setFilter('home')" id="tab-home">ARG</div>
+      <div class="ftab" onclick="setFilter('away')" id="tab-away">FRA</div>
+      <div class="ftab" onclick="setFilter('all')" id="tab-all">TODOS</div>
+    </div>
+    <div id="player-list"></div>
+    <div id="drag-hint">☝ Arrastra un jugador<br>a la cancha</div>
+  </div>
+
+  <!-- CENTER PITCH -->
+  <div id="center">
+    <!-- Pitch header -->
+    <div id="pitch-header">
+      <div id="formation-badge">
+        <span id="current-formation-label">4-3-3</span>
+        <button onclick="openFormationEdit()">✏</button>
+      </div>
+    </div>
+
+    <!-- Pitch -->
+    <div id="pitch-wrap" id="pitch-drop-zone">
+      <div id="pitch-bg"></div>
+      <!-- SVG pitch lines - orientación horizontal -->
+      <svg id="pitch-svg" viewBox="0 0 1020 680" preserveAspectRatio="xMidYMid meet">
+        <!-- Field border -->
+        <rect x="20" y="30" width="980" height="620" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Center line (vertical) -->
+        <line x1="510" y1="30" x2="510" y2="650" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Center circle -->
+        <circle cx="510" cy="340" r="91" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <circle cx="510" cy="340" r="3" fill="rgba(255,255,255,0.7)"/>
+        <!-- Left penalty area -->
+        <rect x="20" y="145" width="130" height="390" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Left goal area -->
+        <rect x="20" y="240" width="55" height="200" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Left goal -->
+        <rect x="8" y="280" width="18" height="120" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+        <!-- Left penalty spot -->
+        <circle cx="130" cy="340" r="3" fill="rgba(255,255,255,0.7)"/>
+        <!-- Left penalty arc -->
+        <path d="M 150 245 A 91 91 0 0 0 150 435" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Left corner arcs -->
+        <path d="M 48 30 A 18 18 0 0 1 20 58" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <path d="M 48 650 A 18 18 0 0 0 20 622" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Right penalty area -->
+        <rect x="870" y="145" width="130" height="390" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Right goal area -->
+        <rect x="945" y="240" width="55" height="200" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Right goal -->
+        <rect x="994" y="280" width="18" height="120" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+        <!-- Right penalty spot -->
+        <circle cx="890" cy="340" r="3" fill="rgba(255,255,255,0.7)"/>
+        <!-- Right penalty arc -->
+        <path d="M 870 245 A 91 91 0 0 1 870 435" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <!-- Right corner arcs -->
+        <path d="M 972 30 A 18 18 0 0 0 1000 58" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <path d="M 972 650 A 18 18 0 0 1 1000 622" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+      </svg>
+
+      <!-- Voronoi overlay -->
+      <canvas id="voronoi-overlay"></canvas>
+
+      <!-- Players layer -->
+      <div id="players-layer"></div>
+
+      <!-- 3D View Overlay -->
+      <div id="view-3d-overlay">
+        <div id="pitch-3d-wrap">
+          <div id="pitch-3d-inner">
+            <canvas id="pitch-3d-canvas" height="500"></canvas>
+            <div id="pitch-3d-players"></div>
+          </div>
+        </div>
+        <button id="close-3d" onclick="setView2D()">✕ Cerrar vista 3D</button>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div id="bottom-bar">
+      <span id="players-placed">ℹ 0 / 11 jugadores colocados</span>
+      <button class="bbtn" onclick="analyzeTactic()">🧠 Analizar táctica</button>
+      <button class="bbtn primary" id="voronoi-btn" onclick="toggleVoronoi()">⬡ Voronoy</button>
+      <button class="bbtn" onclick="clearPitch()">🧹 Limpiar cancha</button>
+      <button class="bbtn" onclick="zoomOut()">−</button>
+      <span id="zoom-val">100%</span>
+      <button class="bbtn" onclick="zoomIn()">+</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="rp-section">
+      <h4>FORMACIÓN</h4>
+      <select id="formation-select" onchange="applyFormation(this.value)">
+        <option value="4-3-3">4-3-3</option>
+        <option value="4-4-2">4-4-2</option>
+        <option value="3-5-2">3-5-2</option>
+        <option value="4-2-3-1">4-2-3-1</option>
+        <option value="5-3-2">5-3-2</option>
+        <option value="3-4-3">3-4-3</option>
+        <option value="4-1-4-1">4-1-4-1</option>
+        <option value="4-5-1">4-5-1</option>
+        <option value="5-4-1">5-4-1</option>
+        <option value="4-3-2-1">4-3-2-1</option>
+        <option value="3-6-1">3-6-1</option>
+        <option value="4-6-0">4-6-0</option>
+      </select>
+
+      <div id="mini-pitch">
+        <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="118" height="78" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+          <!-- Center line vertical -->
+          <line x1="60" y1="1" x2="60" y2="79" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+          <circle cx="60" cy="40" r="12" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+          <!-- Left goal area -->
+          <rect x="1" y="26" width="14" height="28" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+          <!-- Right goal area -->
+          <rect x="105" y="26" width="14" height="28" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+          <g id="mini-dots"></g>
+        </svg>
+      </div>
+      <div class="mini-nav">
+        <button onclick="prevFormation()">‹</button>
+        <span id="mini-label">4-3-3</span>
+        <button onclick="nextFormation()">›</button>
+      </div>
+      <div id="formation-team-picker">
+        <div class="ftp-btn active" id="ftp-home" onclick="setFormationTeam('home')">ARG</div>
+        <div class="ftp-btn" id="ftp-away" onclick="setFormationTeam('away')">FRA</div>
+        <div class="ftp-btn" id="ftp-both" onclick="setFormationTeam('both')">AMBOS</div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <h4>HERRAMIENTAS</h4>
+      <button class="tool-btn active" id="btn-voronoi" onclick="toggleVoronoi()">
+        <span class="ti">⬡</span> Voronoy
+      </button>
+      <div style="height:4px"></div>
+      <button class="tool-btn" id="btn-arrows" onclick="toggleArrows()">
+        <span class="ti">↗</span> Flechas
+      </button>
+      <div style="height:4px"></div>
+      <button class="tool-btn" id="btn-zones" onclick="toggleZones()">
+        <span class="ti">⊞</span> Zonas
+      </button>
+      <div style="height:4px"></div>
+      <button class="tool-btn" onclick="clearPitch()" style="color:var(--red)">
+        <span class="ti">🗑</span> Borrar todo
+      </button>
+    </div>
+
+    <div class="rp-section">
+      <h4>VISTA</h4>
+      <div class="view-toggle">
+        <div class="vtbtn active" id="vbtn-2d" onclick="setView2D()">2D</div>
+        <div class="vtbtn" id="vbtn-3d" onclick="setView3D()">3D</div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <h4>ILUMINACIÓN</h4>
+      <div id="brightness-wrap">
+        <label>🌑</label>
+        <input type="range" id="brightness-slider" min="0.3" max="1.5" step="0.05" value="1" oninput="setBrightness(this.value)">
+        <label>☀</label>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <h4>OPCIONES</h4>
+      <div class="opt-row">
+        <label>Nombres</label>
+        <div class="toggle-sw" id="tog-names" onclick="toggleOption('names')"></div>
+      </div>
+      <div style="height:6px"></div>
+      <div class="opt-row">
+        <label>Números</label>
+        <div class="toggle-sw" id="tog-numbers" onclick="toggleOption('numbers')"></div>
+      </div>
+      <div style="height:6px"></div>
+      <div class="opt-row">
+        <label>Banderas</label>
+        <div class="toggle-sw" id="tog-flags" onclick="toggleOption('flags')"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="cm-item" onclick="ctxEdit()">✏ Editar jugador</div>
+  <div class="cm-item" onclick="ctxReturn()">↩ Devolver a lista</div>
+  <div class="cm-item danger" onclick="ctxRemove()">✕ Quitar</div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip-overlay" id="tooltip">
+  <div class="tname" id="tip-name"></div>
+  <div class="tpos" id="tip-pos"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  DATA — 48 TEAMS WITH REAL WORLD CUP 2026 SQUADS
+// ════════════════════════════════════════════════════════════
+const TEAMS = {
+  // CONMEBOL
+  "Argentina": {
+    flag:"🇦🇷", confederation:"CONMEBOL",
+    players:[
+      {n:23,name:"E. Martínez",pos:"POR",full:"Emiliano Martínez"},
+      {n:12,name:"G. Rulli",pos:"POR",full:"Gerónimo Rulli"},
+      {n:1,name:"F. Armani",pos:"POR",full:"Franco Armani"},
+      {n:13,name:"C. Romero",pos:"DEF",full:"Cristian Romero"},
+      {n:19,name:"N. Otamendi",pos:"DEF",full:"Nicolás Otamendi"},
+      {n:26,name:"N. Molina",pos:"DEF",full:"Nahuel Molina"},
+      {n:3,name:"N. Tagliafico",pos:"DEF",full:"Nicolás Tagliafico"},
+      {n:4,name:"G. Montiel",pos:"DEF",full:"Gonzalo Montiel"},
+      {n:25,name:"L. Martínez",pos:"DEF",full:"Lisandro Martínez"},
+      {n:6,name:"G. Pezzella",pos:"DEF",full:"Germán Pezzella"},
+      {n:7,name:"R. De Paul",pos:"MED",full:"Rodrigo De Paul"},
+      {n:24,name:"E. Fernández",pos:"MED",full:"Enzo Fernández"},
+      {n:20,name:"A. Mac Allister",pos:"MED",full:"Alexis Mac Allister"},
+      {n:8,name:"L. Paredes",pos:"MED",full:"Leandro Paredes"},
+      {n:14,name:"E. Palacios",pos:"MED",full:"Exequiel Palacios"},
+      {n:5,name:"G. Lo Celso",pos:"MED",full:"Giovani Lo Celso"},
+      {n:17,name:"M. Acuña",pos:"MED",full:"Marcos Acuña"},
+      {n:11,name:"Á. Di María",pos:"DEL",full:"Ángel Di María"},
+      {n:10,name:"L. Messi",pos:"DEL",full:"Lionel Messi"},
+      {n:9,name:"J. Álvarez",pos:"DEL",full:"Julián Álvarez"},
+      {n:21,name:"P. Dybala",pos:"DEL",full:"Paulo Dybala"},
+      {n:15,name:"Á. Correa",pos:"DEL",full:"Ángel Correa"},
+      {n:22,name:"L. Ocampos",pos:"DEL",full:"Lucas Ocampos"},
+    ]
+  },
+  "Brasil": {
+    flag:"🇧🇷", confederation:"CONMEBOL",
+    players:[
+      {n:1,name:"Alisson",pos:"POR",full:"Alisson Becker"},
+      {n:23,name:"Ederson",pos:"POR",full:"Ederson Moraes"},
+      {n:2,name:"Danilo",pos:"DEF",full:"Danilo"},
+      {n:3,name:"Guilherme A.",pos:"DEF",full:"Guilherme Arana"},
+      {n:4,name:"Marquinhos",pos:"DEF",full:"Marquinhos"},
+      {n:5,name:"Casemiro",pos:"MED",full:"Casemiro"},
+      {n:6,name:"Alex Telles",pos:"DEF",full:"Alex Telles"},
+      {n:13,name:"Militão",pos:"DEF",full:"Éder Militão"},
+      {n:14,name:"Gerson",pos:"MED",full:"Gerson"},
+      {n:8,name:"Fred",pos:"MED",full:"Fred"},
+      {n:17,name:"Lucas Paquetá",pos:"MED",full:"Lucas Paquetá"},
+      {n:20,name:"Rodrygo",pos:"DEL",full:"Rodrygo"},
+      {n:10,name:"Neymar",pos:"DEL",full:"Neymar Jr."},
+      {n:9,name:"Richarlison",pos:"DEL",full:"Richarlison"},
+      {n:11,name:"Raphinha",pos:"DEL",full:"Raphinha"},
+      {n:7,name:"Vinícius Jr",pos:"DEL",full:"Vinícius Jr."},
+      {n:22,name:"Antony",pos:"DEL",full:"Antony"},
+      {n:18,name:"Gabriel Jesus",pos:"DEL",full:"Gabriel Jesus"},
+      {n:21,name:"Endrick",pos:"DEL",full:"Endrick"},
+      {n:15,name:"Bruno G.",pos:"MED",full:"Bruno Guimarães"},
+      {n:19,name:"Gabriel M.",pos:"DEF",full:"Gabriel Magalhães"},
+    ]
+  },
+  "Colombia": {
+    flag:"🇨🇴", confederation:"CONMEBOL",
+    players:[
+      {n:1,name:"Camilo Vargas",pos:"POR",full:"Camilo Vargas"},
+      {n:23,name:"D. Ospina",pos:"POR",full:"David Ospina"},
+      {n:3,name:"J. Mojica",pos:"DEF",full:"Johan Mojica"},
+      {n:4,name:"S. Arias",pos:"DEF",full:"Santiago Arias"},
+      {n:5,name:"D. Sánchez",pos:"DEF",full:"Davinson Sánchez"},
+      {n:6,name:"W. Tesillo",pos:"DEF",full:"William Tesillo"},
+      {n:13,name:"Y. Mina",pos:"DEF",full:"Yerry Mina"},
+      {n:8,name:"M. Uribe",pos:"MED",full:"Mateus Uribe"},
+      {n:10,name:"J. Cuadrado",pos:"MED",full:"Juan Cuadrado"},
+      {n:16,name:"J. Lerma",pos:"MED",full:"Jefferson Lerma"},
+      {n:18,name:"C. Cuesta",pos:"DEF",full:"Carlos Cuesta"},
+      {n:7,name:"L. Díaz",pos:"DEL",full:"Luis Díaz"},
+      {n:11,name:"M. Díaz",pos:"DEL",full:"Miguel Díaz"},
+      {n:9,name:"R.S. Borré",pos:"DEL",full:"Rafael Santos Borré"},
+      {n:17,name:"L. Muriel",pos:"DEL",full:"Luis Muriel"},
+      {n:21,name:"J. Córdoba",pos:"DEL",full:"Jhon Córdoba"},
+      {n:20,name:"J. Arias",pos:"DEF",full:"Jhon Arias"},
+      {n:14,name:"R. Uribe",pos:"MED",full:"Roger Uribe"},
+      {n:22,name:"E. Sinisterra",pos:"DEL",full:"Elkin Sinisterra"},
+      {n:2,name:"D. Muñoz",pos:"DEF",full:"Daniel Muñoz"},
+      {n:19,name:"J. Rodríguez",pos:"MED",full:"James Rodríguez"},
+    ]
+  },
+  "Uruguay": {
+    flag:"🇺🇾", confederation:"CONMEBOL",
+    players:[
+      {n:1,name:"S. Rochet",pos:"POR",full:"Sergio Rochet"},
+      {n:23,name:"F. Muslera",pos:"POR",full:"Fernando Muslera"},
+      {n:2,name:"J. Cáceres",pos:"DEF",full:"Joaquín Cáceres"},
+      {n:3,name:"M. Olivera",pos:"DEF",full:"Mathías Olivera"},
+      {n:4,name:"R. Araujo",pos:"DEF",full:"Ronald Araújo"},
+      {n:6,name:"J. Giménez",pos:"DEF",full:"José Giménez"},
+      {n:16,name:"M. Vidal",pos:"DEF",full:"Maximiliano Vidal"},
+      {n:5,name:"M. Ugarte",pos:"MED",full:"Manuel Ugarte"},
+      {n:8,name:"F. Valverde",pos:"MED",full:"Federico Valverde"},
+      {n:14,name:"L. Pellistri",pos:"MED",full:"Facundo Pellistri"},
+      {n:10,name:"G. De Arrascaeta",pos:"MED",full:"Giorgian De Arrascaeta"},
+      {n:21,name:"N. De la Cruz",pos:"MED",full:"Nicolás De la Cruz"},
+      {n:9,name:"L. Suárez",pos:"DEL",full:"Luis Suárez"},
+      {n:19,name:"D. Núñez",pos:"DEL",full:"Darwin Núñez"},
+      {n:11,name:"M. Cavani",pos:"DEL",full:"Edinson Cavani"},
+      {n:17,name:"F. Torres",pos:"DEL",full:"Facundo Torres"},
+      {n:7,name:"B. Rodríguez",pos:"MED",full:"Brian Rodríguez"},
+      {n:22,name:"M. Araújo",pos:"DEF",full:"Matías Araújo"},
+    ]
+  },
+  "Ecuador": {
+    flag:"🇪🇨", confederation:"CONMEBOL",
+    players:[
+      {n:1,name:"Hernán Galíndez",pos:"POR",full:"Hernán Galíndez"},
+      {n:12,name:"A. Domínguez",pos:"POR",full:"Alexander Domínguez"},
+      {n:2,name:"A. Preciado",pos:"DEF",full:"Ángelo Preciado"},
+      {n:3,name:"P. Hincapié",pos:"DEF",full:"Piero Hincapié"},
+      {n:4,name:"R. Arreaga",pos:"DEF",full:"Robert Arreaga"},
+      {n:16,name:"J. Plata",pos:"DEF",full:"Jackson Porozo"},
+      {n:5,name:"J. Cifuentes",pos:"MED",full:"José Cifuentes"},
+      {n:8,name:"C. Gruezo",pos:"MED",full:"Carlos Gruezo"},
+      {n:10,name:"J. Méndez",pos:"MED",full:"Jeremy Sarmiento"},
+      {n:6,name:"M. Caicedo",pos:"MED",full:"Moisés Caicedo"},
+      {n:7,name:"P. Estupiñán",pos:"DEF",full:"Pervis Estupiñán"},
+      {n:11,name:"M. Valencia",pos:"DEL",full:"Michael Estrada"},
+      {n:9,name:"E. Valencia",pos:"DEL",full:"Enner Valencia"},
+      {n:13,name:"G. Cabezas",pos:"DEL",full:"Gonzalo Plata"},
+      {n:17,name:"L. Cazares",pos:"DEL",full:"Leonardo Campana"},
+      {n:20,name:"J. Arboleda",pos:"DEF",full:"Félix Torres"},
+    ]
+  },
+  "Paraguay": {
+    flag:"🇵🇾", confederation:"CONMEBOL",
+    players:[
+      {n:1,name:"A. Silva",pos:"POR",full:"Antony Silva"},
+      {n:23,name:"B. Barreto",pos:"POR",full:"Blas Barreto"},
+      {n:3,name:"J. Alonso",pos:"DEF",full:"Junior Alonso"},
+      {n:4,name:"G. Arias",pos:"DEF",full:"Gustavo Gómez"},
+      {n:5,name:"R. Rojas",pos:"DEF",full:"Robert Rojas"},
+      {n:6,name:"F. Alderete",pos:"DEF",full:"Fernando Alderete"},
+      {n:2,name:"M. Otero",pos:"DEF",full:"Matías Palermo"},
+      {n:8,name:"M. Villasanti",pos:"MED",full:"Mathías Villasanti"},
+      {n:10,name:"M. Almirón",pos:"MED",full:"Miguel Almirón"},
+      {n:14,name:"R. Enciso",pos:"MED",full:"Julio Enciso"},
+      {n:7,name:"O. Romero",pos:"DEL",full:"Óscar Romero"},
+      {n:9,name:"Á. Romero",pos:"DEL",full:"Ángel Romero"},
+      {n:11,name:"A. Sanabria",pos:"DEL",full:"Antonio Sanabria"},
+      {n:17,name:"A. Espínola",pos:"DEL",full:"Alexander Espínola"},
+      {n:16,name:"R. Bobadilla",pos:"MED",full:"Richard Ortiz"},
+      {n:18,name:"C. Gamarra",pos:"MED",full:"Hernán Pérez"},
+    ]
+  },
+  // UEFA
+  "Francia": {
+    flag:"🇫🇷", confederation:"UEFA",
+    players:[
+      {n:1,name:"M. Maignan",pos:"POR",full:"Mike Maignan"},
+      {n:16,name:"A. Lloris",pos:"POR",full:"Hugo Lloris"},
+      {n:23,name:"B. Lopes",pos:"POR",full:"Brice Lopes"},
+      {n:2,name:"B. Pavard",pos:"DEF",full:"Benjamin Pavard"},
+      {n:5,name:"J. Koundé",pos:"DEF",full:"Jules Koundé"},
+      {n:4,name:"D. Upamecano",pos:"DEF",full:"Dayot Upamecano"},
+      {n:21,name:"L. Hernández",pos:"DEF",full:"Lucas Hernández"},
+      {n:22,name:"T. Hernández",pos:"DEF",full:"Theo Hernández"},
+      {n:6,name:"W. Fofana",pos:"DEF",full:"Wesley Fofana"},
+      {n:13,name:"I. Konaté",pos:"DEF",full:"Ibrahima Konaté"},
+      {n:8,name:"A. Tchouaméni",pos:"MED",full:"Aurélien Tchouaméni"},
+      {n:14,name:"A. Rabiot",pos:"MED",full:"Adrien Rabiot"},
+      {n:18,name:"Y. Camavinga",pos:"MED",full:"Eduardo Camavinga"},
+      {n:12,name:"K. Zaire",pos:"MED",full:"Khéphren Thuram"},
+      {n:17,name:"K. Coman",pos:"DEL",full:"Kingsley Coman"},
+      {n:11,name:"O. Dembélé",pos:"DEL",full:"Ousmane Dembélé"},
+      {n:7,name:"A. Griezmann",pos:"DEL",full:"Antoine Griezmann"},
+      {n:10,name:"K. Mbappé",pos:"DEL",full:"Kylian Mbappé"},
+      {n:9,name:"O. Giroud",pos:"DEL",full:"Olivier Giroud"},
+      {n:20,name:"M. Thuram",pos:"DEL",full:"Marcus Thuram"},
+      {n:3,name:"L. Digne",pos:"DEF",full:"Lucas Digne"},
+    ]
+  },
+  "España": {
+    flag:"🇪🇸", confederation:"UEFA",
+    players:[
+      {n:1,name:"U. Simón",pos:"POR",full:"Unai Simón"},
+      {n:13,name:"D. Raya",pos:"POR",full:"David Raya"},
+      {n:2,name:"D. Carvajal",pos:"DEF",full:"Dani Carvajal"},
+      {n:3,name:"A. Baldé",pos:"DEF",full:"Alejandro Baldé"},
+      {n:4,name:"N. Williams",pos:"DEF",full:"Aymeric Laporte"},
+      {n:5,name:"Á. Laporte",pos:"DEF",full:"Pau Cubarsí"},
+      {n:24,name:"P. Cubarsí",pos:"DEF",full:"Pau Cubarsí"},
+      {n:20,name:"P. Gavi",pos:"MED",full:"Gavi"},
+      {n:8,name:"K. De Bruyne",pos:"MED",full:"Pedri"},
+      {n:16,name:"Rodri",pos:"MED",full:"Rodrigo Hernández"},
+      {n:14,name:"Fabián Ruiz",pos:"MED",full:"Fabián Ruiz"},
+      {n:10,name:"Pedri",pos:"MED",full:"Pedri"},
+      {n:7,name:"Morata",pos:"DEL",full:"Álvaro Morata"},
+      {n:9,name:"Y. Yamal",pos:"DEL",full:"Lamine Yamal"},
+      {n:19,name:"N. Williams",pos:"DEL",full:"Nico Williams"},
+      {n:11,name:"F. Torres",pos:"DEL",full:"Ferran Torres"},
+      {n:22,name:"D. Olmo",pos:"MED",full:"Dani Olmo"},
+      {n:21,name:"B. Díaz",pos:"DEL",full:"Bryan Díaz"},
+      {n:6,name:"R. Le Normand",pos:"DEF",full:"Robin Le Normand"},
+      {n:17,name:"J. Navas",pos:"DEF",full:"Jesús Navas"},
+      {n:18,name:"M. Merino",pos:"MED",full:"Mikel Merino"},
+    ]
+  },
+  "Alemania": {
+    flag:"🇩🇪", confederation:"UEFA",
+    players:[
+      {n:1,name:"M. Neuer",pos:"POR",full:"Manuel Neuer"},
+      {n:12,name:"O. Baumann",pos:"POR",full:"Oliver Baumann"},
+      {n:4,name:"J. Tah",pos:"DEF",full:"Jonathan Tah"},
+      {n:5,name:"T. Süle",pos:"DEF",full:"Niklas Süle"},
+      {n:22,name:"A. Rüdiger",pos:"DEF",full:"Antonio Rüdiger"},
+      {n:3,name:"D. Raum",pos:"DEF",full:"David Raum"},
+      {n:19,name:"L. Klostermann",pos:"DEF",full:"Lukas Klostermann"},
+      {n:6,name:"J. Kimmich",pos:"MED",full:"Joshua Kimmich"},
+      {n:21,name:"I. Gündogan",pos:"MED",full:"İlkay Gündoğan"},
+      {n:14,name:"J. Musiala",pos:"MED",full:"Jamal Musiala"},
+      {n:10,name:"L. Goretzka",pos:"MED",full:"Leon Goretzka"},
+      {n:8,name:"T. Kroos",pos:"MED",full:"Toni Kroos"},
+      {n:7,name:"K. Havertz",pos:"MED",full:"Kai Havertz"},
+      {n:13,name:"T. Müller",pos:"DEL",full:"Thomas Müller"},
+      {n:9,name:"N. Füllkrug",pos:"DEL",full:"Niclas Füllkrug"},
+      {n:11,name:"L. Nmecha",pos:"DEL",full:"Lukas Nmecha"},
+      {n:17,name:"F. Wirtz",pos:"DEL",full:"Florian Wirtz"},
+      {n:20,name:"L. Gnabry",pos:"DEL",full:"Serge Gnabry"},
+      {n:2,name:"B. Pavard",pos:"DEF",full:"Josua Kimmich"},
+      {n:18,name:"A. Sané",pos:"DEL",full:"Leroy Sané"},
+      {n:16,name:"C. Nkunku",pos:"DEL",full:"Christopher Nkunku"},
+    ]
+  },
+  "Portugal": {
+    flag:"🇵🇹", confederation:"UEFA",
+    players:[
+      {n:1,name:"R. Patrício",pos:"POR",full:"Rui Patrício"},
+      {n:12,name:"José Sá",pos:"POR",full:"José Sá"},
+      {n:2,name:"D. Dalot",pos:"DEF",full:"Diogo Dalot"},
+      {n:3,name:"R. Guerreiro",pos:"DEF",full:"Raphaël Guerreiro"},
+      {n:4,name:"Rúben Dias",pos:"DEF",full:"Rúben Dias"},
+      {n:5,name:"Pepe",pos:"DEF",full:"Pepe"},
+      {n:6,name:"N. Semedo",pos:"DEF",full:"Nélson Semedo"},
+      {n:16,name:"Danilo",pos:"DEF",full:"Danilo Pereira"},
+      {n:8,name:"B. Fernandes",pos:"MED",full:"Bruno Fernandes"},
+      {n:14,name:"W. Carvalho",pos:"MED",full:"William Carvalho"},
+      {n:23,name:"J. Palhinha",pos:"MED",full:"João Palhinha"},
+      {n:18,name:"R. Neves",pos:"MED",full:"Rúben Neves"},
+      {n:11,name:"B. Silva",pos:"MED",full:"Bernardo Silva"},
+      {n:10,name:"B. Fernandes",pos:"MED",full:"Bruno Fernandes"},
+      {n:7,name:"C. Ronaldo",pos:"DEL",full:"Cristiano Ronaldo"},
+      {n:9,name:"A. Silva",pos:"DEL",full:"André Silva"},
+      {n:17,name:"G. Ramos",pos:"DEL",full:"Gonçalo Ramos"},
+      {n:21,name:"J. Costa",pos:"DEL",full:"João Félix"},
+      {n:20,name:"R. Leão",pos:"DEL",full:"Rafael Leão"},
+      {n:13,name:"D. Costa",pos:"DEF",full:"Diogo Costa"},
+      {n:19,name:"P. Guedes",pos:"DEL",full:"Pedro Gonçalves"},
+    ]
+  },
+  "Inglaterra": {
+    flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", confederation:"UEFA",
+    players:[
+      {n:1,name:"J. Pickford",pos:"POR",full:"Jordan Pickford"},
+      {n:13,name:"A. Ramsdale",pos:"POR",full:"Aaron Ramsdale"},
+      {n:2,name:"K. Walker",pos:"DEF",full:"Kyle Walker"},
+      {n:3,name:"L. Shaw",pos:"DEF",full:"Luke Shaw"},
+      {n:5,name:"J. Stones",pos:"DEF",full:"John Stones"},
+      {n:6,name:"H. Maguire",pos:"DEF",full:"Harry Maguire"},
+      {n:12,name:"K. Trippier",pos:"DEF",full:"Kieran Trippier"},
+      {n:4,name:"D. Rice",pos:"MED",full:"Declan Rice"},
+      {n:8,name:"J. Bellingham",pos:"MED",full:"Jude Bellingham"},
+      {n:10,name:"P. Foden",pos:"MED",full:"Phil Foden"},
+      {n:22,name:"M. Gallagher",pos:"MED",full:"Conor Gallagher"},
+      {n:17,name:"T. Alexander",pos:"DEF",full:"Trent Alexander-Arnold"},
+      {n:7,name:"J. Grealish",pos:"DEL",full:"Jack Grealish"},
+      {n:11,name:"M. Rashford",pos:"DEL",full:"Marcus Rashford"},
+      {n:9,name:"H. Kane",pos:"DEL",full:"Harry Kane"},
+      {n:20,name:"O. Watkins",pos:"DEL",full:"Ollie Watkins"},
+      {n:19,name:"J. Saka",pos:"DEL",full:"Bukayo Saka"},
+      {n:14,name:"C. Palmer",pos:"MED",full:"Cole Palmer"},
+      {n:23,name:"I. Maatsen",pos:"DEF",full:"Ian Maatsen"},
+      {n:18,name:"A. Gordon",pos:"DEL",full:"Anthony Gordon"},
+      {n:21,name:"E. Nketiah",pos:"DEL",full:"Eddie Nketiah"},
+    ]
+  },
+  "Países Bajos": {
+    flag:"🇳🇱", confederation:"UEFA",
+    players:[
+      {n:1,name:"B. Flekken",pos:"POR",full:"Mark Flekken"},
+      {n:23,name:"A. Noppert",pos:"POR",full:"Andries Noppert"},
+      {n:2,name:"D. Dumfries",pos:"DEF",full:"Denzel Dumfries"},
+      {n:3,name:"J. Blind",pos:"DEF",full:"Daley Blind"},
+      {n:4,name:"V. van Dijk",pos:"DEF",full:"Virgil van Dijk"},
+      {n:5,name:"N. de Jong",pos:"MED",full:"Frenkie de Jong"},
+      {n:22,name:"S. de Vrij",pos:"DEF",full:"Stefan de Vrij"},
+      {n:6,name:"T. de Jong",pos:"DEF",full:"Tyrell Malacia"},
+      {n:8,name:"G. Wijnaldum",pos:"MED",full:"Georginio Wijnaldum"},
+      {n:10,name:"M. Depay",pos:"DEL",full:"Memphis Depay"},
+      {n:14,name:"D. Blind",pos:"MED",full:"Davy Klaassen"},
+      {n:20,name:"F. de Jong",pos:"MED",full:"Frenkie de Jong"},
+      {n:7,name:"S. Berghuis",pos:"DEL",full:"Steven Berghuis"},
+      {n:9,name:"L. de Jong",pos:"DEL",full:"Luuk de Jong"},
+      {n:11,name:"C. Gakpo",pos:"DEL",full:"Cody Gakpo"},
+      {n:17,name:"N. Madueke",pos:"DEL",full:"Noni Madueke"},
+      {n:21,name:"X. Simons",pos:"MED",full:"Xavi Simons"},
+      {n:19,name:"D. Frimpong",pos:"DEF",full:"Jeremie Frimpong"},
+      {n:16,name:"T. Reijnders",pos:"MED",full:"Tijjani Reijnders"},
+      {n:18,name:"B. Brobbey",pos:"DEL",full:"Brian Brobbey"},
+    ]
+  },
+  "Bélgica": {
+    flag:"🇧🇪", confederation:"UEFA",
+    players:[
+      {n:1,name:"T. Courtois",pos:"POR",full:"Thibaut Courtois"},
+      {n:12,name:"M. Casteels",pos:"POR",full:"Koen Casteels"},
+      {n:2,name:"T. Castagne",pos:"DEF",full:"Timothy Castagne"},
+      {n:3,name:"T. Tielemans",pos:"MED",full:"Youri Tielemans"},
+      {n:4,name:"T. Alderweireld",pos:"DEF",full:"Toby Alderweireld"},
+      {n:5,name:"J. Vertonghen",pos:"DEF",full:"Jan Vertonghen"},
+      {n:6,name:"A. Witsel",pos:"MED",full:"Axel Witsel"},
+      {n:8,name:"A. Vanaken",pos:"MED",full:"Hans Vanaken"},
+      {n:7,name:"K. De Bruyne",pos:"MED",full:"Kevin De Bruyne"},
+      {n:10,name:"E. Hazard",pos:"DEL",full:"Eden Hazard"},
+      {n:11,name:"D. Mertens",pos:"DEL",full:"Dries Mertens"},
+      {n:9,name:"R. Lukaku",pos:"DEL",full:"Romelu Lukaku"},
+      {n:14,name:"D. Origi",pos:"DEL",full:"Divock Origi"},
+      {n:17,name:"C. De Ketelaere",pos:"DEL",full:"Charles De Ketelaere"},
+      {n:20,name:"L. Trossard",pos:"DEL",full:"Leandro Trossard"},
+      {n:19,name:"A. Doku",pos:"DEL",full:"Jérémy Doku"},
+      {n:22,name:"T. Hazard",pos:"MED",full:"Thorgan Hazard"},
+      {n:13,name:"A. Theate",pos:"DEF",full:"Arthur Theate"},
+      {n:16,name:"A. Mangala",pos:"DEF",full:"Orel Mangala"},
+      {n:18,name:"Y. Tielemans",pos:"MED",full:"Youri Tielemans"},
+    ]
+  },
+  "Croacia": {
+    flag:"🇭🇷", confederation:"UEFA",
+    players:[
+      {n:1,name:"D. Livaković",pos:"POR",full:"Dominik Livaković"},
+      {n:2,name:"J. Stanišić",pos:"DEF",full:"Josip Stanišić"},
+      {n:3,name:"B. Sosa",pos:"DEF",full:"Borna Sosa"},
+      {n:5,name:"D. Vida",pos:"DEF",full:"Domagoj Vida"},
+      {n:6,name:"D. Gvardiol",pos:"DEF",full:"Joško Gvardiol"},
+      {n:8,name:"M. Brozović",pos:"MED",full:"Marcelo Brozović"},
+      {n:10,name:"L. Modrić",pos:"MED",full:"Luka Modrić"},
+      {n:4,name:"I. Perišić",pos:"MED",full:"Ivan Perišić"},
+      {n:11,name:"M. Kovačić",pos:"MED",full:"Mateo Kovačić"},
+      {n:9,name:"A. Kramarić",pos:"DEL",full:"Andrej Kramarić"},
+      {n:17,name:"B. Pašalić",pos:"DEL",full:"Mario Pašalić"},
+      {n:7,name:"B. Budimir",pos:"DEL",full:"Ante Budimir"},
+      {n:13,name:"L. Ivanušec",pos:"MED",full:"Luka Ivanušec"},
+      {n:14,name:"N. Vlašić",pos:"MED",full:"Nikola Vlašić"},
+      {n:19,name:"M. Baturina",pos:"MED",full:"Martin Baturina"},
+      {n:22,name:"I. Zubak",pos:"DEL",full:"Josip Juranović"},
+    ]
+  },
+  "Suiza": {
+    flag:"🇨🇭", confederation:"UEFA",
+    players:[
+      {n:1,name:"Y. Sommer",pos:"POR",full:"Yann Sommer"},
+      {n:23,name:"G. Kobel",pos:"POR",full:"Gregor Kobel"},
+      {n:2,name:"S. Widmer",pos:"DEF",full:"Silvan Widmer"},
+      {n:3,name:"R. Rodriguez",pos:"DEF",full:"Ricardo Rodríguez"},
+      {n:5,name:"M. Akanji",pos:"DEF",full:"Manuel Akanji"},
+      {n:4,name:"F. Schär",pos:"DEF",full:"Fabian Schär"},
+      {n:8,name:"R. Freuler",pos:"MED",full:"Remo Freuler"},
+      {n:10,name:"G. Xhaka",pos:"MED",full:"Granit Xhaka"},
+      {n:14,name:"C. Embolo",pos:"DEL",full:"Breel Embolo"},
+      {n:9,name:"H. Seferović",pos:"DEL",full:"Haris Seferović"},
+      {n:11,name:"X. Shaqiri",pos:"DEL",full:"Xherdan Shaqiri"},
+      {n:17,name:"R. Vargas",pos:"DEL",full:"Ruben Vargas"},
+      {n:21,name:"D. Ndoye",pos:"DEL",full:"Dan Ndoye"},
+      {n:6,name:"D. Zakaria",pos:"MED",full:"Denis Zakaria"},
+      {n:18,name:"M. Sow",pos:"MED",full:"Nico Elvedi"},
+      {n:20,name:"F. Frei",pos:"MED",full:"Fabian Frei"},
+    ]
+  },
+  "Austria": {
+    flag:"🇦🇹", confederation:"UEFA",
+    players:[
+      {n:1,name:"P. Pentz",pos:"POR",full:"Patrick Pentz"},
+      {n:12,name:"A. Schlager",pos:"POR",full:"Alexander Schlager"},
+      {n:2,name:"S. Posch",pos:"DEF",full:"Stefan Posch"},
+      {n:3,name:"P. Alaba",pos:"DEF",full:"David Alaba"},
+      {n:4,name:"K. Lienhart",pos:"DEF",full:"Philipp Lienhart"},
+      {n:5,name:"M. Wöber",pos:"DEF",full:"Maximilian Wöber"},
+      {n:8,name:"X. Schlager",pos:"MED",full:"Xaver Schlager"},
+      {n:10,name:"M. Sabitzer",pos:"MED",full:"Marcel Sabitzer"},
+      {n:7,name:"G. Baumgartner",pos:"MED",full:"Christoph Baumgartner"},
+      {n:14,name:"K. Laimer",pos:"MED",full:"Konrad Laimer"},
+      {n:9,name:"M. Gregoritsch",pos:"DEL",full:"Michael Gregoritsch"},
+      {n:11,name:"M. Arnautović",pos:"DEL",full:"Marko Arnautović"},
+      {n:17,name:"P. Wimmer",pos:"DEF",full:"Patrick Wimmer"},
+      {n:6,name:"A. Grull",pos:"MED",full:"Andreas Gruber"},
+      {n:19,name:"R. Seiwald",pos:"MED",full:"Nicolas Seiwald"},
+      {n:22,name:"T. Entrup",pos:"DEL",full:"Thomas Entrup"},
+    ]
+  },
+  "Noruega": {
+    flag:"🇳🇴", confederation:"UEFA",
+    players:[
+      {n:1,name:"Ø. Nydham",pos:"POR",full:"Ørjan Nyland"},
+      {n:12,name:"J. Flekken",pos:"POR",full:"Jørgen Flekken"},
+      {n:2,name:"M. Pedersen",pos:"DEF",full:"Moritz Jenz"},
+      {n:3,name:"O. Bjørkan",pos:"DEF",full:"Birger Meling"},
+      {n:5,name:"L. Ajer",pos:"DEF",full:"Kristoffer Ajer"},
+      {n:4,name:"A. Hanche-Olsen",pos:"DEF",full:"Andreas Hanche-Olsen"},
+      {n:8,name:"M. Ødegaard",pos:"MED",full:"Martin Ødegaard"},
+      {n:17,name:"S. Berge",pos:"MED",full:"Sander Berge"},
+      {n:6,name:"P. Thorsby",pos:"MED",full:"Morten Thorsby"},
+      {n:20,name:"F. Aursnes",pos:"MED",full:"Fredrik Aursnes"},
+      {n:9,name:"E. Haaland",pos:"DEL",full:"Erling Haaland"},
+      {n:11,name:"A. Sørloth",pos:"DEL",full:"Alexander Sørloth"},
+      {n:7,name:"J. King",pos:"DEL",full:"Joshua King"},
+      {n:22,name:"M. Elyounoussi",pos:"DEL",full:"Mohamed Elyounoussi"},
+      {n:10,name:"O. Solbakken",pos:"DEL",full:"Ola Solbakken"},
+      {n:14,name:"T. Thorstvedt",pos:"MED",full:"Tobias Børkeeiet"},
+    ]
+  },
+  "Escocia": {
+    flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", confederation:"UEFA",
+    players:[
+      {n:1,name:"A. Gunn",pos:"POR",full:"Angus Gunn"},
+      {n:13,name:"Z. Marshall",pos:"POR",full:"Zander Clark"},
+      {n:2,name:"A. Ralston",pos:"DEF",full:"Anthony Ralston"},
+      {n:3,name:"G. Tierney",pos:"DEF",full:"Kieran Tierney"},
+      {n:5,name:"J. Hendry",pos:"DEF",full:"Jack Hendry"},
+      {n:6,name:"S. McTominay",pos:"MED",full:"Scott McTominay"},
+      {n:4,name:"B. Hanley",pos:"DEF",full:"Grant Hanley"},
+      {n:8,name:"C. McGregor",pos:"MED",full:"Callum McGregor"},
+      {n:10,name:"J. McGinn",pos:"MED",full:"John McGinn"},
+      {n:14,name:"B. Gilmour",pos:"MED",full:"Billy Gilmour"},
+      {n:17,name:"R. Christie",pos:"MED",full:"Ryan Christie"},
+      {n:9,name:"L. Dykes",pos:"DEL",full:"Lyndon Dykes"},
+      {n:11,name:"R. McKenna",pos:"DEL",full:"Ryan McKenna"},
+      {n:7,name:"J. Forrest",pos:"DEL",full:"James Forrest"},
+      {n:20,name:"D. Patterson",pos:"DEF",full:"Nathan Patterson"},
+      {n:21,name:"B. Tierney",pos:"DEL",full:"Ben Doak"},
+    ]
+  },
+  "Suecia": {
+    flag:"🇸🇪", confederation:"UEFA",
+    players:[
+      {n:1,name:"R. Olsen",pos:"POR",full:"Robin Olsen"},
+      {n:12,name:"K. Johnsson",pos:"POR",full:"Karl-Johan Johnsson"},
+      {n:2,name:"E. Krafth",pos:"DEF",full:"Emil Krafth"},
+      {n:3,name:"L. Augustinsson",pos:"DEF",full:"Ludwig Augustinsson"},
+      {n:5,name:"V. Lindelöf",pos:"DEF",full:"Victor Lindelöf"},
+      {n:6,name:"M. Lustig",pos:"DEF",full:"Mikael Lustig"},
+      {n:4,name:"A. Danielson",pos:"DEF",full:"Andreas Danielson"},
+      {n:8,name:"A. Ekdal",pos:"MED",full:"Albin Ekdal"},
+      {n:10,name:"E. Forsberg",pos:"MED",full:"Emil Forsberg"},
+      {n:7,name:"S. Larsson",pos:"MED",full:"Sebastian Larsson"},
+      {n:14,name:"K. Olsson",pos:"MED",full:"Kristoffer Olsson"},
+      {n:9,name:"A. Isak",pos:"DEL",full:"Alexander Isak"},
+      {n:11,name:"R. Quaison",pos:"DEL",full:"Robin Quaison"},
+      {n:17,name:"J. Kulusevski",pos:"DEL",full:"Dejan Kulusevski"},
+      {n:20,name:"G. Elanga",pos:"DEL",full:"Anthony Elanga"},
+      {n:22,name:"V. Gyökeres",pos:"DEL",full:"Viktor Gyökeres"},
+    ]
+  },
+  "Turquía": {
+    flag:"🇹🇷", confederation:"UEFA",
+    players:[
+      {n:1,name:"Ş. Günok",pos:"POR",full:"Şenol Güneş"},
+      {n:12,name:"A. Bayındır",pos:"POR",full:"Altay Bayındır"},
+      {n:2,name:"Z. Çelik",pos:"DEF",full:"Zeki Çelik"},
+      {n:3,name:"F. Kadioglu",pos:"DEF",full:"Ferdi Kadıoğlu"},
+      {n:5,name:"M. Demiral",pos:"DEF",full:"Merih Demiral"},
+      {n:6,name:"K. Ayhan",pos:"DEF",full:"Kaan Ayhan"},
+      {n:8,name:"H. Çalhanoğlu",pos:"MED",full:"Hakan Çalhanoğlu"},
+      {n:10,name:"Arda Güler",pos:"MED",full:"Arda Güler"},
+      {n:4,name:"S. Özcan",pos:"MED",full:"Salih Özcan"},
+      {n:7,name:"K. Akturkoglu",pos:"DEL",full:"Kerem Aktürkoğlu"},
+      {n:9,name:"B. Yılmaz",pos:"DEL",full:"Burak Yılmaz"},
+      {n:11,name:"İ. Yüksel",pos:"DEL",full:"İrfan Can Kahveci"},
+      {n:17,name:"O. Kabak",pos:"DEF",full:"Ozan Kabak"},
+      {n:20,name:"B. Karaman",pos:"DEL",full:"Burak Karaman"},
+      {n:14,name:"Y. Yazıcı",pos:"MED",full:"Yusuf Yazıcı"},
+      {n:19,name:"B. Demiri",pos:"DEF",full:"Bartug Elmaz"},
+    ]
+  },
+  "Bosnia-Herzegovina": {
+    flag:"🇧🇦", confederation:"UEFA",
+    players:[
+      {n:1,name:"I. Piric",pos:"POR",full:"Ibrahim Šehić"},
+      {n:12,name:"B. Sehic",pos:"POR",full:"Amer Šabić"},
+      {n:2,name:"E. Kolasinac",pos:"DEF",full:"Sead Kolašinac"},
+      {n:5,name:"E. Šunjić",pos:"DEF",full:"Ermin Šunjić"},
+      {n:4,name:"A. Škiljan",pos:"DEF",full:"Aleksandar Dragović"},
+      {n:6,name:"M. Šćepović",pos:"DEF",full:"Miroslav Stevanović"},
+      {n:8,name:"M. Pjanić",pos:"MED",full:"Miralem Pjanić"},
+      {n:10,name:"E. Džeko",pos:"DEL",full:"Edin Džeko"},
+      {n:7,name:"S. Pjaca",pos:"DEL",full:"Anel Ahmedhodžić"},
+      {n:9,name:"E. Hajrović",pos:"DEL",full:"Ermedin Demirović"},
+      {n:11,name:"A. Gojak",pos:"MED",full:"Amer Gojak"},
+      {n:14,name:"H. Ibišević",pos:"MED",full:"Haris Vučkić"},
+      {n:17,name:"B. Kolasinac",pos:"DEF",full:"Benedikt Höwedes"},
+    ]
+  },
+  "Chequia": {
+    flag:"🇨🇿", confederation:"UEFA",
+    players:[
+      {n:1,name:"J. Staněk",pos:"POR",full:"Jiří Staněk"},
+      {n:23,name:"P. Kovář",pos:"POR",full:"Aleš Mandous"},
+      {n:2,name:"P. Coufal",pos:"DEF",full:"Vladimír Coufal"},
+      {n:3,name:"J. Bořil",pos:"DEF",full:"Jan Bořil"},
+      {n:5,name:"L. Holeš",pos:"DEF",full:"Lukáš Holeš"},
+      {n:4,name:"O. Čelůstka",pos:"DEF",full:"Ondřej Čelůstka"},
+      {n:8,name:"T. Souček",pos:"MED",full:"Tomáš Souček"},
+      {n:10,name:"D. Sýkora",pos:"MED",full:"Lukáš Provod"},
+      {n:7,name:"A. Barák",pos:"MED",full:"Antonín Barák"},
+      {n:9,name:"P. Schick",pos:"DEL",full:"Patrik Schick"},
+      {n:11,name:"M. Kuchta",pos:"DEL",full:"Marek Ondrášek"},
+      {n:17,name:"O. Lingr",pos:"DEL",full:"Ondřej Lingr"},
+      {n:14,name:"A. Hlídek",pos:"MED",full:"Jakub Jankto"},
+      {n:6,name:"V. Sadílek",pos:"MED",full:"Vladimír Darida"},
+    ]
+  },
+  // CONCACAF
+  "México": {
+    flag:"🇲🇽", confederation:"CONCACAF",
+    players:[
+      {n:1,name:"G. Ochoa",pos:"POR",full:"Guillermo Ochoa"},
+      {n:13,name:"A. Talavera",pos:"POR",full:"Alfredo Talavera"},
+      {n:2,name:"J. Sánchez",pos:"DEF",full:"Jorge Sánchez"},
+      {n:3,name:"J. Gallardo",pos:"DEF",full:"Jesús Gallardo"},
+      {n:15,name:"H. Moreno",pos:"DEF",full:"Héctor Moreno"},
+      {n:4,name:"E. Araujo",pos:"DEF",full:"Edson Álvarez"},
+      {n:5,name:"J. Vásquez",pos:"DEF",full:"Johan Vásquez"},
+      {n:6,name:"C. Rodríguez",pos:"DEF",full:"Carlos Rodríguez"},
+      {n:10,name:"D. Chávez",pos:"MED",full:"Diego Lainez"},
+      {n:8,name:"E. Álvarez",pos:"MED",full:"Edson Álvarez"},
+      {n:14,name:"H. Lozano",pos:"MED",full:"Hirving Lozano"},
+      {n:7,name:"R. Jiménez",pos:"DEL",full:"Raúl Jiménez"},
+      {n:9,name:"H. Martin",pos:"DEL",full:"Henry Martín"},
+      {n:11,name:"A. Vega",pos:"DEL",full:"Alexis Vega"},
+      {n:17,name:"J. Antuna",pos:"DEL",full:"Uriel Antuna"},
+      {n:22,name:"S. Cordova",pos:"DEL",full:"Roberto Alvarado"},
+      {n:19,name:"O. Pineda",pos:"MED",full:"Orbelín Pineda"},
+      {n:20,name:"C. Antuna",pos:"MED",full:"Carlos Antuna"},
+    ]
+  },
+  "Estados Unidos": {
+    flag:"🇺🇸", confederation:"CONCACAF",
+    players:[
+      {n:1,name:"M. Turner",pos:"POR",full:"Matt Turner"},
+      {n:12,name:"E. Horvath",pos:"POR",full:"Ethan Horvath"},
+      {n:2,name:"S. Dest",pos:"DEF",full:"Sergiño Dest"},
+      {n:3,name:"A. Robinson",pos:"DEF",full:"Antonee Robinson"},
+      {n:5,name:"W. Zimmerman",pos:"DEF",full:"Walker Zimmerman"},
+      {n:6,name:"M. Ream",pos:"DEF",full:"Tim Ream"},
+      {n:15,name:"A. Long",pos:"DEF",full:"Aaron Long"},
+      {n:8,name:"T. Adams",pos:"MED",full:"Tyler Adams"},
+      {n:10,name:"C. Pulisic",pos:"MED",full:"Christian Pulisic"},
+      {n:4,name:"Y. Musah",pos:"MED",full:"Yunus Musah"},
+      {n:7,name:"G. Sargent",pos:"DEL",full:"Josh Sargent"},
+      {n:9,name:"R. Weah",pos:"DEL",full:"Timothy Weah"},
+      {n:11,name:"B. Aaronson",pos:"DEL",full:"Brenden Aaronson"},
+      {n:17,name:"R. Reyna",pos:"MED",full:"Giovanni Reyna"},
+      {n:22,name:"M. Balogun",pos:"DEL",full:"Folarin Balogun"},
+      {n:19,name:"C. Mceniery",pos:"DEL",full:"Cade Cowell"},
+      {n:20,name:"J. Ferreira",pos:"DEL",full:"Jesus Ferreira"},
+      {n:14,name:"L. Gausman",pos:"DEF",full:"Caleb Wiley"},
+    ]
+  },
+  "Canadá": {
+    flag:"🇨🇦", confederation:"CONCACAF",
+    players:[
+      {n:1,name:"M. Crepeau",pos:"POR",full:"Maxime Crépeau"},
+      {n:23,name:"J. Borjan",pos:"POR",full:"Milan Borjan"},
+      {n:2,name:"R. Laryea",pos:"DEF",full:"Richie Laryea"},
+      {n:3,name:"A. Davies",pos:"DEF",full:"Alphonso Davies"},
+      {n:4,name:"S. Vitoria",pos:"DEF",full:"Alistair Johnston"},
+      {n:5,name:"D. Miller",pos:"DEF",full:"Derek Miller"},
+      {n:16,name:"K. Henry",pos:"DEF",full:"Kamal Miller"},
+      {n:8,name:"A. Eustáquio",pos:"MED",full:"Stephen Eustáquio"},
+      {n:10,name:"J. David",pos:"MED",full:"Jonathan David"},
+      {n:6,name:"I. Buchanan",pos:"MED",full:"Ismaël Koné"},
+      {n:7,name:"L. Adekugbe",pos:"DEF",full:"Samuel Adekugbe"},
+      {n:9,name:"C. Larin",pos:"DEL",full:"Cyle Larin"},
+      {n:11,name:"T. Buchanan",pos:"DEL",full:"Tajon Buchanan"},
+      {n:17,name:"A. Hoilett",pos:"DEL",full:"Junior Hoilett"},
+      {n:19,name:"A. Ugbo",pos:"DEL",full:"Ike Ugbo"},
+      {n:20,name:"O. Osorio",pos:"MED",full:"Mark-Anthony Kaye"},
+      {n:14,name:"L. Gausman",pos:"MED",full:"Liam Millar"},
+    ]
+  },
+  "Panamá": {
+    flag:"🇵🇦", confederation:"CONCACAF",
+    players:[
+      {n:1,name:"L. Mejía",pos:"POR",full:"Luis Mejía"},
+      {n:12,name:"J. Penedo",pos:"POR",full:"Jaime Penedo"},
+      {n:2,name:"M. Murillo",pos:"DEF",full:"Murillo"},
+      {n:3,name:"E. Davis",pos:"DEF",full:"Eric Davis"},
+      {n:4,name:"R. Miller",pos:"DEF",full:"Rolando Blackburn"},
+      {n:5,name:"J. Rodriguez",pos:"DEF",full:"Cecilio Waterman"},
+      {n:8,name:"A. Mosquera",pos:"MED",full:"Anibal Godoy"},
+      {n:10,name:"A. Figuero",pos:"MED",full:"Adalberto Carrasquilla"},
+      {n:7,name:"I. Anderson",pos:"DEL",full:"Gabriel Torres"},
+      {n:9,name:"J. Cox",pos:"DEL",full:"Ismael Díaz"},
+      {n:11,name:"E. Báez",pos:"DEL",full:"Édgar Báez"},
+      {n:17,name:"R. Fajardo",pos:"DEL",full:"Rolando Blackburn"},
+      {n:6,name:"J. Murillo",pos:"DEF",full:"Jiovany Ramos"},
+      {n:14,name:"B. Arroyo",pos:"MED",full:"Freddy Gondola"},
+    ]
+  },
+  "Haití": {
+    flag:"🇭🇹", confederation:"CONCACAF",
+    players:[
+      {n:1,name:"J. Poteau",pos:"POR",full:"Johnny Poteau"},
+      {n:12,name:"O. Philogène",pos:"POR",full:"Hervé Dorvil"},
+      {n:2,name:"S. Fauré",pos:"DEF",full:"Steeven Saba"},
+      {n:3,name:"A. Herold",pos:"DEF",full:"Andrew Herold"},
+      {n:5,name:"R. Belfort",pos:"DEF",full:"Réginal Goreux"},
+      {n:4,name:"A. Herard",pos:"DEF",full:"Mechack Jérôme"},
+      {n:8,name:"J. Mathurin",pos:"MED",full:"James Léandre"},
+      {n:10,name:"D. Chery",pos:"MED",full:"Duckens Nazon"},
+      {n:7,name:"K. Laventure",pos:"MED",full:"Kevin Lafrance"},
+      {n:9,name:"C. Pierrot",pos:"DEL",full:"Frantzdy Pierrot"},
+      {n:11,name:"S. Noel",pos:"DEL",full:"Woodby Théodore"},
+      {n:17,name:"J. Philogene",pos:"DEL",full:"Jaden Philogène-Bidace"},
+      {n:6,name:"K. Théus",pos:"MED",full:"Kévin Lavallee"},
+    ]
+  },
+  "Curazao": {
+    flag:"🇨🇼", confederation:"CONCACAF",
+    players:[
+      {n:1,name:"E. van Rooij",pos:"POR",full:"Eloy Room"},
+      {n:12,name:"G. Rollo",pos:"POR",full:"Geronimo Rulli"},
+      {n:2,name:"K. van Nieuwkoop",pos:"DEF",full:"Kairo van Nieuwkoop"},
+      {n:3,name:"V. Thomas",pos:"DEF",full:"Vurnon Anita"},
+      {n:5,name:"C. Martina",pos:"DEF",full:"Cuco Martina"},
+      {n:4,name:"D. Meijer",pos:"DEF",full:"Darryl Lachman"},
+      {n:8,name:"I. Rosario",pos:"MED",full:"Leandro Bacuna"},
+      {n:10,name:"G. Kerk",pos:"DEL",full:"Gyrano Kerk"},
+      {n:7,name:"J. Piroe",pos:"DEL",full:"Joel Piroe"},
+      {n:9,name:"A. Shew",pos:"DEL",full:"Afonso Sousa"},
+      {n:11,name:"R. Thomas",pos:"DEL",full:"Ryan Thomas"},
+      {n:6,name:"J. Dumfries",pos:"MED",full:"Jair Sambo"},
+    ]
+  },
+  // CAF
+  "Marruecos": {
+    flag:"🇲🇦", confederation:"CAF",
+    players:[
+      {n:1,name:"Y. Bounou",pos:"POR",full:"Yassine Bounou"},
+      {n:23,name:"M. Tagnaouti",pos:"POR",full:"Munir Mohamedi"},
+      {n:2,name:"A. Hakimi",pos:"DEF",full:"Achraf Hakimi"},
+      {n:3,name:"N. Mazraoui",pos:"DEF",full:"Noussair Mazraoui"},
+      {n:5,name:"R. Aguerd",pos:"DEF",full:"Romain Saïss"},
+      {n:4,name:"N. Amrabat",pos:"MED",full:"Nayef Aguerd"},
+      {n:6,name:"A. Benhaddou",pos:"DEF",full:"Adam Masina"},
+      {n:8,name:"S. Amrabat",pos:"MED",full:"Sofyan Amrabat"},
+      {n:14,name:"I. Ounahi",pos:"MED",full:"Azzedine Ounahi"},
+      {n:10,name:"H. Ziyech",pos:"MED",full:"Hakim Ziyech"},
+      {n:17,name:"S. Boufal",pos:"DEL",full:"Sofiane Boufal"},
+      {n:7,name:"Y. En-Nesyri",pos:"DEL",full:"Youssef En-Nesyri"},
+      {n:9,name:"A. Sabiri",pos:"DEL",full:"Abdelhamid Sabiri"},
+      {n:11,name:"A. Ezzalzouli",pos:"DEL",full:"Abde Ezzalzouli"},
+      {n:19,name:"C. Brahim",pos:"MED",full:"Brahim Díaz"},
+      {n:20,name:"I. En-Nesyri",pos:"DEL",full:"Ibrahim Diaz"},
+      {n:22,name:"Y. Jabrane",pos:"DEF",full:"Yahia Attiyat Allah"},
+    ]
+  },
+  "Senegal": {
+    flag:"🇸🇳", confederation:"CAF",
+    players:[
+      {n:1,name:"É. Mendy",pos:"POR",full:"Édouard Mendy"},
+      {n:16,name:"A. Gomis",pos:"POR",full:"Alfred Gomis"},
+      {n:2,name:"B. Sarr",pos:"DEF",full:"Bouna Sarr"},
+      {n:3,name:"S. Ciss",pos:"DEF",full:"Saliou Ciss"},
+      {n:5,name:"K. Koulibaly",pos:"DEF",full:"Kalidou Koulibaly"},
+      {n:4,name:"A. Nianzou",pos:"DEF",full:"Tanguy Nianzou"},
+      {n:6,name:"P. Gomis",pos:"DEF",full:"Pape Sarr"},
+      {n:8,name:"I. Gueye",pos:"MED",full:"Idrissa Gueye"},
+      {n:10,name:"S. Mané",pos:"DEL",full:"Sadio Mané"},
+      {n:14,name:"P. Mendy",pos:"MED",full:"Pape Gueye"},
+      {n:7,name:"I. Sarr",pos:"DEL",full:"Ismaïla Sarr"},
+      {n:9,name:"B. Diallo",pos:"DEL",full:"Boulaye Dia"},
+      {n:11,name:"N. Jackson",pos:"DEL",full:"Nicolas Jackson"},
+      {n:20,name:"L. Badji",pos:"DEL",full:"Lamine Camara"},
+      {n:17,name:"B. Ndiaye",pos:"MED",full:"Lamine Camara"},
+      {n:22,name:"P. Gueye",pos:"MED",full:"Moussa Niakhate"},
+    ]
+  },
+  "Egipto": {
+    flag:"🇪🇬", confederation:"CAF",
+    players:[
+      {n:1,name:"M. El-Shennawy",pos:"POR",full:"Mohamed El-Shennawy"},
+      {n:23,name:"E. El-Hadary",pos:"POR",full:"Essam El-Hadary"},
+      {n:2,name:"A. Hegazi",pos:"DEF",full:"Ahmed Hegazi"},
+      {n:3,name:"O. Gabaski",pos:"POR",full:"Omar Gabaski"},
+      {n:5,name:"M. Hamdy",pos:"DEF",full:"Ayman Ashraf"},
+      {n:4,name:"A. Fatouh",pos:"DEF",full:"Mohamed Abdelmonem"},
+      {n:8,name:"T. Mohamed",pos:"MED",full:"Tarek Hamed"},
+      {n:10,name:"M. Salah",pos:"DEL",full:"Mohamed Salah"},
+      {n:7,name:"R. Maran",pos:"MED",full:"Ramadan Sobhi"},
+      {n:9,name:"M. Sherif",pos:"DEL",full:"Mostafa Mohamed"},
+      {n:11,name:"O. Marmoush",pos:"DEL",full:"Omar Marmoush"},
+      {n:14,name:"A. Elneny",pos:"MED",full:"Mohamed Elneny"},
+      {n:17,name:"A. Ashraf",pos:"DEF",full:"Ahmed Sayed"},
+      {n:6,name:"A. Kahraba",pos:"MED",full:"Ahmed Kahraba"},
+      {n:20,name:"Z. Ashour",pos:"MED",full:"Zizo"},
+      {n:22,name:"H. El-Nenny",pos:"DEF",full:"Hassan El-Nenny"},
+    ]
+  },
+  "Ghana": {
+    flag:"🇬🇭", confederation:"CAF",
+    players:[
+      {n:1,name:"L. Ati-Zigi",pos:"POR",full:"Lawrence Ati-Zigi"},
+      {n:12,name:"J. Mensah",pos:"POR",full:"Jojo Wollacott"},
+      {n:2,name:"A. Ayew",pos:"DEF",full:"Andrew Ayew"},
+      {n:3,name:"G. Mensah",pos:"DEF",full:"Gideon Mensah"},
+      {n:4,name:"D. Amartey",pos:"DEF",full:"Daniel Amartey"},
+      {n:5,name:"A. Djiku",pos:"DEF",full:"Alexander Djiku"},
+      {n:6,name:"B. Baidoo",pos:"DEF",full:"Baba Abdul Rahman"},
+      {n:8,name:"T. Partey",pos:"MED",full:"Thomas Partey"},
+      {n:10,name:"A. Ayew",pos:"MED",full:"André Ayew"},
+      {n:14,name:"I. Suleiman",pos:"MED",full:"Iddrisu Baba"},
+      {n:7,name:"K. Ayew",pos:"DEL",full:"Jordan Ayew"},
+      {n:9,name:"I. Kudus",pos:"DEL",full:"Mohammed Kudus"},
+      {n:11,name:"O. Bukari",pos:"DEL",full:"Osman Bukari"},
+      {n:17,name:"A. Semenyo",pos:"DEL",full:"Antoine Semenyo"},
+      {n:19,name:"I. Fatawu",pos:"DEL",full:"Ibrahim Fatawu"},
+    ]
+  },
+  "Camerún": {
+    flag:"🇨🇲", confederation:"CAF",
+    players:[]
+  },
+  "Costa de Marfil": {
+    flag:"🇨🇮", confederation:"CAF",
+    players:[
+      {n:1,name:"F. Gradel",pos:"POR",full:"Yahia Fofana"},
+      {n:12,name:"S. Sangare",pos:"POR",full:"Samirou Trawore"},
+      {n:2,name:"T. Boly",pos:"DEF",full:"Willy Boly"},
+      {n:3,name:"E. Bailly",pos:"DEF",full:"Eric Bailly"},
+      {n:5,name:"S. Zaha",pos:"DEF",full:"Simon Adingra"},
+      {n:4,name:"G. Aurier",pos:"DEF",full:"Serge Aurier"},
+      {n:8,name:"F. Kessié",pos:"MED",full:"Franck Kessié"},
+      {n:10,name:"S. Gradel",pos:"MED",full:"Sébastien Haller"},
+      {n:7,name:"N. Pépé",pos:"DEL",full:"Nicolas Pépé"},
+      {n:9,name:"W. Zaha",pos:"DEL",full:"Wilfried Zaha"},
+      {n:11,name:"S. Haller",pos:"DEL",full:"Sébastien Haller"},
+      {n:14,name:"A. Sangare",pos:"MED",full:"Ibrahim Sangaré"},
+      {n:17,name:"M. Fofana",pos:"DEF",full:"Max-Alain Gradel"},
+      {n:19,name:"S. Adingra",pos:"DEL",full:"Simon Adingra"},
+    ]
+  },
+  "Argelia": {
+    flag:"🇩🇿", confederation:"CAF",
+    players:[
+      {n:1,name:"R. M'Bolhi",pos:"POR",full:"Raïs M'Bolhi"},
+      {n:23,name:"A. Mandrea",pos:"POR",full:"Alexandre Oukidja"},
+      {n:2,name:"A. Mandi",pos:"DEF",full:"Aïssa Mandi"},
+      {n:3,name:"S. Atal",pos:"DEF",full:"Youcef Atal"},
+      {n:4,name:"R. Bensebaïni",pos:"DEF",full:"Ramy Bensebaïni"},
+      {n:5,name:"D. Benlamri",pos:"DEF",full:"Djamel Benlamri"},
+      {n:8,name:"Y. Boukhanchouche",pos:"MED",full:"Yacine Brahimi"},
+      {n:10,name:"R. Mahrez",pos:"DEL",full:"Riyad Mahrez"},
+      {n:7,name:"S. Feghouli",pos:"MED",full:"Sofiane Feghouli"},
+      {n:9,name:"I. Slimani",pos:"DEL",full:"Islam Slimani"},
+      {n:11,name:"B. Boudaoui",pos:"MED",full:"Haris Belkebla"},
+      {n:14,name:"A. Bennacer",pos:"MED",full:"Ismaël Bennacer"},
+      {n:17,name:"R. Ounahi",pos:"DEL",full:"Mohamed Amine Amoura"},
+      {n:20,name:"Y. Brahimi",pos:"DEL",full:"Yacine Brahimi"},
+    ]
+  },
+  "Túnez": {
+    flag:"🇹🇳", confederation:"CAF",
+    players:[
+      {n:1,name:"A. Dahmen",pos:"POR",full:"Aymen Dahmen"},
+      {n:16,name:"M. Ben Hmida",pos:"POR",full:"Mohamed Sedki Debchi"},
+      {n:2,name:"M. Dräger",pos:"DEF",full:"Montassar Talbi"},
+      {n:3,name:"A. Ben Romdhane",pos:"DEF",full:"Ali Maaloul"},
+      {n:5,name:"J. Meriah",pos:"DEF",full:"Jameleddine Jebali"},
+      {n:4,name:"D. Abdi",pos:"DEF",full:"Mohamed Amine Ben Hamida"},
+      {n:8,name:"M. Khenissi",pos:"MED",full:"Khazri"},
+      {n:10,name:"Y. Msakni",pos:"MED",full:"Youssef Msakni"},
+      {n:7,name:"W. Khazri",pos:"MED",full:"Wahbi Khazri"},
+      {n:9,name:"E. Jaziri",pos:"DEL",full:"Seifeddine Jaziri"},
+      {n:11,name:"N. Sliti",pos:"DEL",full:"Naïm Sliti"},
+      {n:17,name:"I. Jebali",pos:"DEL",full:"Issam Jebali"},
+      {n:14,name:"F. Ben Romdhane",pos:"MED",full:"Anis Ben Slimane"},
+    ]
+  },
+  "Sudáfrica": {
+    flag:"🇿🇦", confederation:"CAF",
+    players:[
+      {n:1,name:"V. Williams",pos:"POR",full:"Veli Mothwa"},
+      {n:12,name:"B. Williams",pos:"POR",full:"Bruce Bvuma"},
+      {n:2,name:"S. Mngqithi",pos:"DEF",full:"Sifiso Hlanti"},
+      {n:3,name:"R. Maluleke",pos:"DEF",full:"Reeve Frosler"},
+      {n:5,name:"G. Williams",pos:"DEF",full:"Grant Kekana"},
+      {n:4,name:"S. Mokoena",pos:"DEF",full:"Rushine de Reuck"},
+      {n:8,name:"B. Zungu",pos:"MED",full:"Bongani Zungu"},
+      {n:10,name:"T. Shalulile",pos:"DEL",full:"Themba Zwane"},
+      {n:7,name:"K. Dolly",pos:"MED",full:"Keagan Dolly"},
+      {n:9,name:"P. Zwane",pos:"DEL",full:"Percy Tau"},
+      {n:11,name:"L. Foster",pos:"DEL",full:"Lyle Foster"},
+      {n:17,name:"A. Majoro",pos:"DEL",full:"Gaston Sirino"},
+      {n:6,name:"N. Lebogang",pos:"MED",full:"Mothobi Mvala"},
+    ]
+  },
+  "Congo DR": {
+    flag:"🇨🇩", confederation:"CAF",
+    players:[
+      {n:1,name:"O. Nkoy",pos:"POR",full:"Ley Matampi"},
+      {n:12,name:"J. Parfait",pos:"POR",full:"Joel Kiassumbua"},
+      {n:2,name:"T. Mbemba",pos:"DEF",full:"Chancel Mbemba"},
+      {n:3,name:"A. Tuanzebe",pos:"DEF",full:"Axel Tuanzebe"},
+      {n:5,name:"B. Lukeba",pos:"DEF",full:"Castello Lukeba"},
+      {n:4,name:"N. Lukamba",pos:"DEF",full:"Naby Sarr"},
+      {n:8,name:"G. Mvidi",pos:"MED",full:"Gaël Kakuta"},
+      {n:10,name:"P. Onuachu",pos:"DEL",full:"Paul Onuachu"},
+      {n:7,name:"M. Bayo",pos:"DEL",full:"Arthur Masuaku"},
+      {n:9,name:"B. Nzoloko",pos:"DEL",full:"Dodi Lukebakio"},
+      {n:11,name:"A. Nzita",pos:"DEL",full:"Cédric Bakambu"},
+      {n:17,name:"J. Jackson",pos:"DEL",full:"Silas"},
+      {n:6,name:"W. Bongonda",pos:"MED",full:"Theo Bongonda"},
+      {n:14,name:"D. Losomy",pos:"MED",full:"Samuel Moutoussamy"},
+    ]
+  },
+  "Cabo Verde": {
+    flag:"🇨🇻", confederation:"CAF",
+    players:[
+      {n:1,name:"V. Mendes",pos:"POR",full:"Vozinha"},
+      {n:12,name:"A. Ramos",pos:"POR",full:"Adrián Ramos"},
+      {n:2,name:"A. Lima",pos:"DEF",full:"Stopira"},
+      {n:3,name:"M. Benchimol",pos:"DEF",full:"Márcio Inácio"},
+      {n:5,name:"O. Borges",pos:"DEF",full:"Óscar Marino"},
+      {n:4,name:"R. Reis",pos:"DEF",full:"Rocha"},
+      {n:8,name:"E. Lima",pos:"MED",full:"Garry Rodrigues"},
+      {n:10,name:"L. Lopes",pos:"MED",full:"Ryan Mendes"},
+      {n:7,name:"H. Évora",pos:"MED",full:"Kenny Rocha Santos"},
+      {n:9,name:"Z. Tavares",pos:"DEL",full:"Bebé"},
+      {n:11,name:"G. Monteiro",pos:"DEL",full:"Garry Rodrigues"},
+      {n:17,name:"D. Andrade",pos:"DEL",full:"Dylan Tavares"},
+      {n:6,name:"A. Almeida",pos:"MED",full:"Calú"},
+    ]
+  },
+  // AFC
+  "Japón": {
+    flag:"🇯🇵", confederation:"AFC",
+    players:[
+      {n:1,name:"S. Gonda",pos:"POR",full:"Shuichi Gonda"},
+      {n:12,name:"D. Schmidt",pos:"POR",full:"Daniel Schmidt"},
+      {n:2,name:"H. Sakai",pos:"DEF",full:"Hiroki Sakai"},
+      {n:3,name:"Y. Nagatomo",pos:"DEF",full:"Yuto Nagatomo"},
+      {n:4,name:"K. Itakura",pos:"DEF",full:"Kō Itakura"},
+      {n:5,name:"T. Yoshida",pos:"DEF",full:"Maya Yoshida"},
+      {n:6,name:"W. Endo",pos:"MED",full:"Wataru Endō"},
+      {n:7,name:"T. Minamino",pos:"MED",full:"Takumi Minamino"},
+      {n:8,name:"H. Morita",pos:"MED",full:"Hidemasa Morita"},
+      {n:9,name:"A. Ueda",pos:"DEL",full:"Ayase Ueda"},
+      {n:10,name:"S. Kubo",pos:"DEL",full:"Takefusa Kubo"},
+      {n:11,name:"H. Ito",pos:"DEL",full:"Junya Itō"},
+      {n:14,name:"D. Suzuki",pos:"MED",full:"Daichi Kamada"},
+      {n:17,name:"K. Mitoma",pos:"DEL",full:"Kaoru Mitoma"},
+      {n:20,name:"R. Doan",pos:"DEL",full:"Ritsu Dōan"},
+      {n:19,name:"M. Tanaka",pos:"MED",full:"Ao Tanaka"},
+    ]
+  },
+  "Corea del Sur": {
+    flag:"🇰🇷", confederation:"AFC",
+    players:[
+      {n:1,name:"Kim Seung-gyu",pos:"POR",full:"Kim Seung-gyu"},
+      {n:23,name:"Jo Hyeon-woo",pos:"POR",full:"Jo Hyeon-woo"},
+      {n:2,name:"Kim Moon-hwan",pos:"DEF",full:"Kim Moon-hwan"},
+      {n:3,name:"Kim Jin-su",pos:"DEF",full:"Kim Jin-su"},
+      {n:4,name:"Kim Min-jae",pos:"DEF",full:"Kim Min-jae"},
+      {n:5,name:"Jung Seung-hyun",pos:"DEF",full:"Jung Seung-hyun"},
+      {n:7,name:"Son Heung-min",pos:"DEL",full:"Son Heung-min"},
+      {n:8,name:"Lee Jae-sung",pos:"MED",full:"Lee Jae-sung"},
+      {n:10,name:"Lee Kang-in",pos:"MED",full:"Lee Kang-in"},
+      {n:9,name:"Hwang Hee-chan",pos:"DEL",full:"Hwang Hee-chan"},
+      {n:11,name:"Hwang Ui-jo",pos:"DEL",full:"Hwang Ui-jo"},
+      {n:14,name:"Kwon Chang-hoon",pos:"MED",full:"Kwon Chang-hoon"},
+      {n:17,name:"Cho Gue-sung",pos:"DEL",full:"Cho Gue-sung"},
+      {n:6,name:"Jung Woo-young",pos:"MED",full:"Jung Woo-young"},
+      {n:20,name:"Oh Hyeon-gyu",pos:"DEL",full:"Oh Hyeon-gyu"},
+    ]
+  },
+  "Australia": {
+    flag:"🇦🇺", confederation:"AFC",
+    players:[
+      {n:1,name:"M. Ryan",pos:"POR",full:"Mathew Ryan"},
+      {n:12,name:"D. Vukovic",pos:"POR",full:"Danny Vukovic"},
+      {n:2,name:"N. Atkinson",pos:"DEF",full:"Nathaniel Atkinson"},
+      {n:3,name:"A. Behich",pos:"DEF",full:"Aziz Behich"},
+      {n:5,name:"M. Souttar",pos:"DEF",full:"Harry Souttar"},
+      {n:4,name:"K. Rowles",pos:"DEF",full:"Kye Rowles"},
+      {n:8,name:"R. McGree",pos:"MED",full:"Riley McGree"},
+      {n:10,name:"A. Hrustic",pos:"MED",full:"Ajdin Hrustic"},
+      {n:7,name:"M. Leckie",pos:"DEL",full:"Mathew Leckie"},
+      {n:9,name:"M. Duke",pos:"DEL",full:"Mitch Duke"},
+      {n:11,name:"B. Maclaren",pos:"DEL",full:"Jamie Maclaren"},
+      {n:14,name:"J. Irvine",pos:"MED",full:"Jackson Irvine"},
+      {n:17,name:"A. Mabil",pos:"DEL",full:"Awer Mabil"},
+      {n:6,name:"T. Rogic",pos:"MED",full:"Tom Rogic"},
+      {n:20,name:"C. Goodwin",pos:"DEL",full:"Cameron Devlin"},
+    ]
+  },
+  "Arabia Saudita": {
+    flag:"🇸🇦", confederation:"AFC",
+    players:[
+      {n:1,name:"M. Al-Owais",pos:"POR",full:"Mohammed Al-Owais"},
+      {n:21,name:"Y. Al-Mosailem",pos:"POR",full:"Yasser Al-Mosailem"},
+      {n:2,name:"S. Al-Ghannam",pos:"DEF",full:"Sultan Al-Ghannam"},
+      {n:3,name:"Y. Al-Shahrani",pos:"DEF",full:"Yasser Al-Shahrani"},
+      {n:5,name:"A. Al-Bulaihi",pos:"DEF",full:"Ali Al-Bulaihi"},
+      {n:4,name:"A. Al-Amri",pos:"DEF",full:"Abdulelah Al-Amri"},
+      {n:8,name:"M. Al-Qasem",pos:"MED",full:"Sami Al-Najei"},
+      {n:10,name:"S. Al-Dawsari",pos:"MED",full:"Salem Al-Dawsari"},
+      {n:7,name:"A. Al-Shehri",pos:"DEL",full:"Firas Al-Buraikan"},
+      {n:9,name:"H. Al-Shahrani",pos:"DEL",full:"Haitham Asiri"},
+      {n:11,name:"M. Al-Buraikan",pos:"DEL",full:"Mohammed Al-Buraikan"},
+      {n:17,name:"S. Al-Malki",pos:"MED",full:"Sami Al-Malki"},
+      {n:6,name:"A. Al-Khaibari",pos:"MED",full:"Abdulellah Al-Malki"},
+    ]
+  },
+  "Irán": {
+    flag:"🇮🇷", confederation:"AFC",
+    players:[
+      {n:1,name:"A. Beiranvand",pos:"POR",full:"Alireza Beiranvand"},
+      {n:12,name:"H. Hosseini",pos:"POR",full:"Hossein Hosseini"},
+      {n:2,name:"R. Rezaeian",pos:"DEF",full:"Ramin Rezaeian"},
+      {n:3,name:"E. Hajsafi",pos:"DEF",full:"Ehsan Hajsafi"},
+      {n:5,name:"M. Hosseini",pos:"DEF",full:"Majid Hosseini"},
+      {n:4,name:"A. Pouraliganji",pos:"DEF",full:"Abolfazl Jalali"},
+      {n:8,name:"S. Ezatolahi",pos:"MED",full:"Saeid Ezatolahi"},
+      {n:10,name:"M. Taremi",pos:"DEL",full:"Mehdi Taremi"},
+      {n:7,name:"M. Mohammadi",pos:"MED",full:"Milad Mohammadi"},
+      {n:9,name:"S. Azmoun",pos:"DEL",full:"Sardar Azmoun"},
+      {n:11,name:"A. Ansarifard",pos:"DEL",full:"Karim Ansarifard"},
+      {n:14,name:"A. Jalali",pos:"MED",full:"Ahmad Nourollahi"},
+      {n:17,name:"V. Amiri",pos:"MED",full:"Vahid Amiri"},
+      {n:6,name:"A. Jahanbakhsh",pos:"DEL",full:"Alireza Jahanbakhsh"},
+    ]
+  },
+  "Irak": {
+    flag:"🇮🇶", confederation:"AFC",
+    players:[
+      {n:1,name:"J. Hassan",pos:"POR",full:"Jalal Hassan"},
+      {n:23,name:"F. Al-Shammari",pos:"POR",full:"Fahad Al-Shammari"},
+      {n:2,name:"A. Hamid",pos:"DEF",full:"Ahmed Ibrahim"},
+      {n:3,name:"A. Yasser",pos:"DEF",full:"Ali Adnan"},
+      {n:5,name:"B. Nashat",pos:"DEF",full:"Bachar Resan"},
+      {n:4,name:"M. Hamid",pos:"DEF",full:"Musa Tameem"},
+      {n:8,name:"A. Alamri",pos:"MED",full:"Amjed Attwan"},
+      {n:10,name:"A. Hussein",pos:"DEL",full:"Aymen Hussein"},
+      {n:7,name:"A. Al-Hamadi",pos:"DEL",full:"Ali Al-Hamadi"},
+      {n:9,name:"B. Khatab",pos:"DEL",full:"Mohanad Ali"},
+      {n:11,name:"M. Jabbar",pos:"MED",full:"Hussein Ali"},
+      {n:6,name:"O. Abdulrahman",pos:"MED",full:"Omar Khribit"},
+    ]
+  },
+  "Jordania": {
+    flag:"🇯🇴", confederation:"AFC",
+    players:[
+      {n:1,name:"Y. Al-Nabulsi",pos:"POR",full:"Yazeed Abo Laila"},
+      {n:12,name:"M. Shnaik",pos:"POR",full:"Mohammad Shnaik"},
+      {n:2,name:"A. Subhi",pos:"DEF",full:"Ahmad Subhi"},
+      {n:3,name:"B. Al-Smeitat",pos:"DEF",full:"Baha Faisal"},
+      {n:5,name:"S. Nasib",pos:"DEF",full:"Salem Al-Ajalin"},
+      {n:4,name:"H. Daifalla",pos:"DEF",full:"Hassan Abdel-Fattah"},
+      {n:8,name:"I. Al-Zarba",pos:"MED",full:"Ibrahim Al-Saify"},
+      {n:10,name:"M. Abu Zema",pos:"MED",full:"Mousa Al-Taamari"},
+      {n:7,name:"Y. Al-Bakkar",pos:"MED",full:"Yousef Al-Rawashda"},
+      {n:9,name:"A. Bani-Yaseen",pos:"DEL",full:"Ahmad Bani-Yaseen"},
+      {n:11,name:"O. Al-Nablus",pos:"DEL",full:"Zaid Al-Harasis"},
+      {n:6,name:"R. Kasrawi",pos:"MED",full:"Renan Kasrawi"},
+    ]
+  },
+  "Qatar": {
+    flag:"🇶🇦", confederation:"AFC",
+    players:[
+      {n:1,name:"S. Al Sheeb",pos:"POR",full:"Saad Al Sheeb"},
+      {n:12,name:"Y. Al Rawi",pos:"POR",full:"Yousef Al Hassan"},
+      {n:2,name:"P. Miguel",pos:"DEF",full:"Pedro Miguel"},
+      {n:3,name:"H. Salman",pos:"DEF",full:"Homam Ahmed"},
+      {n:5,name:"A. Khoukhi",pos:"DEF",full:"Boualem Khoukhi"},
+      {n:4,name:"T. Al Haidos",pos:"DEF",full:"Tarek Salman"},
+      {n:8,name:"K. Boutaïb",pos:"MED",full:"Karim Boutaïb"},
+      {n:10,name:"A. Afif",pos:"MED",full:"Akram Afif"},
+      {n:7,name:"A. Al Haydos",pos:"MED",full:"Hassan Al Haydos"},
+      {n:9,name:"A. Al Haidos",pos:"DEL",full:"Almoez Ali"},
+      {n:11,name:"M. Muntari",pos:"DEL",full:"Ismaiel Mohamed"},
+      {n:6,name:"T. El Gaaloul",pos:"MED",full:"Mohammed Waad"},
+    ]
+  },
+  "Uzbekistán": {
+    flag:"🇺🇿", confederation:"AFC",
+    players:[
+      {n:1,name:"I. Nematov",pos:"POR",full:"Ibragim Nematov"},
+      {n:12,name:"U. Yuldashev",pos:"POR",full:"Utkir Yusupov"},
+      {n:2,name:"S. Jalolov",pos:"DEF",full:"Sherzod Nasimov"},
+      {n:3,name:"J. Amonov",pos:"DEF",full:"Jamshid Iskanderov"},
+      {n:5,name:"D. Nishonov",pos:"DEF",full:"Dostonbek Khamdamov"},
+      {n:4,name:"I. Turgunov",pos:"DEF",full:"Islombek Kobilov"},
+      {n:8,name:"O. Zokirov",pos:"MED",full:"Otabek Shukurov"},
+      {n:10,name:"J. Tursunov",pos:"MED",full:"Javokhir Sidikov"},
+      {n:7,name:"K. Shomurodov",pos:"MED",full:"Eldor Shomurodov"},
+      {n:9,name:"E. Shomurodov",pos:"DEL",full:"Eldor Shomurodov"},
+      {n:11,name:"A. Ulmasov",pos:"DEL",full:"Abbosbek Fayzullaev"},
+      {n:6,name:"S. Jabbor",pos:"MED",full:"Shokhruh Jaloliddinov"},
+    ]
+  },
+  // OFC
+  "Nueva Zelanda": {
+    flag:"🇳🇿", confederation:"OFC",
+    players:[
+      {n:1,name:"O. Sail",pos:"POR",full:"Oliver Sail"},
+      {n:12,name:"M. Raynes",pos:"POR",full:"Michael Raynes"},
+      {n:2,name:"T. Doyle",pos:"DEF",full:"Tommy Doyle"},
+      {n:3,name:"L. Erceg",pos:"DEF",full:"Liberato Cacace"},
+      {n:5,name:"N. Dekker",pos:"DEF",full:"Nando Pijnaker"},
+      {n:4,name:"M. Boxall",pos:"DEF",full:"Michael Boxall"},
+      {n:8,name:"M. Garbett",pos:"MED",full:"Marko Grbic"},
+      {n:10,name:"C. Wood",pos:"DEL",full:"Chris Wood"},
+      {n:7,name:"W. Grigg",pos:"MED",full:"Clayton Lewis"},
+      {n:9,name:"S. Payne",pos:"DEL",full:"Kosta Barbarouses"},
+      {n:11,name:"J. Dunn",pos:"DEL",full:"Joel Stevens"},
+      {n:6,name:"L. Cacace",pos:"DEF",full:"Liberato Cacace"},
+    ]
+  },
+};
+
+// Fill teams with no players with placeholders
+Object.values(TEAMS).forEach(t => {
+  if (!t.players) t.players = [];
+  if (t.players.length === 0) {
+    const pos = ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','DEL','DEL','DEL'];
+    for (let i=0; i<11; i++) {
+      t.players.push({n:i+1, name:`Jugador ${i+1}`, pos:pos[i]||'MED', full:`Jugador ${i+1}`});
+    }
+  }
+});
+
+// FORMATIONS: posiciones en % [x, y] — cancha horizontal
+// x: 0=portería izquierda (local), 100=portería derecha (visitante)
+// y: 0=arriba, 100=abajo
+// El equipo LOCAL ataca hacia la derecha (empieza en x bajos)
+// El equipo VISITANTE ataca hacia la izquierda (empieza en x altos, espejado)
+const FORMATIONS = {
+  "4-3-3": [
+    [8,50],            // POR
+    [28,18],[28,38],[28,62],[28,82], // DEF
+    [50,28],[50,50],[50,72],         // MED
+    [75,18],[75,50],[75,82],         // DEL
+  ],
+  "4-4-2": [
+    [8,50],
+    [28,12],[28,37],[28,63],[28,88],
+    [50,12],[50,37],[50,63],[50,88],
+    [78,35],[78,65],
+  ],
+  "3-5-2": [
+    [8,50],
+    [28,25],[28,50],[28,75],
+    [50,10],[50,30],[50,50],[50,70],[50,90],
+    [78,35],[78,65],
+  ],
+  "4-2-3-1": [
+    [8,50],
+    [28,12],[28,37],[28,63],[28,88],
+    [45,35],[45,65],
+    [62,15],[62,50],[62,85],
+    [82,50],
+  ],
+  "5-3-2": [
+    [8,50],
+    [28,8],[28,27],[28,50],[28,73],[28,92],
+    [50,25],[50,50],[50,75],
+    [78,35],[78,65],
+  ],
+  "3-4-3": [
+    [8,50],
+    [28,25],[28,50],[28,75],
+    [50,12],[50,37],[50,63],[50,88],
+    [78,18],[78,50],[78,82],
+  ],
+  "4-1-4-1": [
+    [8,50],
+    [28,12],[28,37],[28,63],[28,88],
+    [40,50],
+    [56,10],[56,33],[56,67],[56,90],
+    [82,50],
+  ],
+  "4-5-1": [
+    [8,50],
+    [28,12],[28,37],[28,63],[28,88],
+    [52,8],[52,27],[52,50],[52,73],[52,92],
+    [82,50],
+  ],
+  "5-4-1": [
+    [8,50],
+    [28,8],[28,27],[28,50],[28,73],[28,92],
+    [50,12],[50,37],[50,63],[50,88],
+    [82,50],
+  ],
+  "4-3-2-1": [
+    [8,50],
+    [28,12],[28,37],[28,63],[28,88],
+    [47,25],[47,50],[47,75],
+    [65,33],[65,67],
+    [82,50],
+  ],
+  "3-6-1": [
+    [8,50],
+    [25,25],[25,50],[25,75],
+    [45,8],[45,25],[45,45],[45,55],[45,75],[45,92],
+    [82,50],
+  ],
+  "4-6-0": [
+    [8,50],
+    [25,12],[25,37],[25,63],[25,88],
+    [45,8],[45,27],[45,45],[45,55],[45,73],[45,92],
+    [70,50],
+  ],
+};
+
+const FORMATION_KEYS = Object.keys(FORMATIONS);
+
+// State
+let homeTeam = "Argentina";
+let awayTeam = "Francia";
+let activeFilter = "home";
+let placedPlayers = []; // {id, teamKey, playerIdx, x%, y%, el}
+let currentFormation = "4-3-3";
+let voronoiActive = false;
+let arrowsMode = false;
+let zonesMode = false;
+let zoom = 100;
+let options = {names:true, numbers:true, flags:true};
+let draggedPlayerData = null;
+let dragClone = null;
+let ctxTarget = null;
+let playerIdCounter = 0;
+let formationTeamTarget = 'home'; // 'home','away','both'
+let isLightMode = true;
+
+const teamKeys = Object.keys(TEAMS);
+
+// ── INIT ──
+function init() {
+  buildDropdowns();
+  buildPlayerList();
+  updateTabLabels();
+  updateCounter();
+  renderMiniPitch();
+  // Auto-place default teams
+  setTimeout(() => {
+    autoPlaceTeam(homeTeam, 'home');
+    autoPlaceTeam(awayTeam, 'away');
+  }, 100);
+}
+
+function buildDropdowns() {
+  ['a','b'].forEach(side => {
+    const container = document.getElementById(`opts-${side}`);
+    container.innerHTML = '';
+    teamKeys.forEach(key => {
+      const t = TEAMS[key];
+      const div = document.createElement('div');
+      div.className = 'team-opt';
+      div.innerHTML = `<span class="f">${t.flag}</span><span>${key}</span>`;
+      div.onclick = () => selectTeam(side, key);
+      container.appendChild(div);
+    });
+  });
+}
+
+function filterTeams(side) {
+  const q = document.getElementById(`search-${side}`).value.toLowerCase();
+  const container = document.getElementById(`opts-${side}`);
+  container.querySelectorAll('.team-opt').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function toggleDropdown(side) {
+  const dd = document.getElementById(`dropdown-${side}`);
+  const other = document.getElementById(`dropdown-${side === 'a' ? 'b' : 'a'}`);
+  other.classList.remove('open');
+  dd.classList.toggle('open');
+  if (dd.classList.contains('open')) {
+    document.getElementById(`search-${side}`).focus();
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.team-select-box')) {
+    document.querySelectorAll('.team-dropdown').forEach(d => d.classList.remove('open'));
+  }
+  if (!e.target.closest('#ctx-menu')) hideCtx();
+});
+
+function selectTeam(side, key) {
+  if (side === 'a') homeTeam = key;
+  else awayTeam = key;
+  document.getElementById(`flag-${side}`).textContent = TEAMS[key].flag;
+  document.getElementById(`name-${side}`).textContent = key.toUpperCase();
+  document.getElementById(`dropdown-${side}`).classList.remove('open');
+  updateTabLabels();
+  buildPlayerList();
+  // Auto-place the 11 starters on the pitch in current formation
+  const teamKey = key;
+  // Remove existing players of this team from pitch
+  const toRemove = placedPlayers.filter(p => p.teamKey === teamKey).map(p => p.id);
+  toRemove.forEach(id => removeToken(id));
+  // Place 11 players in formation positions
+  autoPlaceTeam(teamKey, side === 'a' ? 'home' : 'away');
+}
+
+function updateTabLabels() {
+  document.getElementById('tab-home').textContent = homeTeam.slice(0,3).toUpperCase();
+  document.getElementById('tab-away').textContent = awayTeam.slice(0,3).toUpperCase();
+  document.getElementById('ftp-home').textContent = homeTeam.slice(0,3).toUpperCase();
+  document.getElementById('ftp-away').textContent = awayTeam.slice(0,3).toUpperCase();
+}
+
+function autoPlaceTeam(teamKey, side) {
+  // side: 'home' (left, x bajos) o 'away' (right, x altos, espejo en X)
+  const team = TEAMS[teamKey];
+  if (!team) return;
+  const positions = FORMATIONS[currentFormation];
+  const sorted = sortPlayersForFormation(team.players, currentFormation);
+  sorted.forEach((player, i) => {
+    if (i >= positions.length) return;
+    const playerIdx = team.players.indexOf(player);
+    if (playerIdx < 0) return;
+    if (placedPlayers.some(pp => pp.teamKey === teamKey && pp.playerIdx === playerIdx)) return;
+    let [x, y] = positions[i];
+    if (side === 'away') {
+      x = 100 - x; // espejo horizontal para visitante
+    }
+    placePlayer(teamKey, playerIdx, x, y, false);
+  });
+}
+
+function sortPlayersForFormation(players, formation) {
+  // Returns first 11 sorted by pos: 1 POR, then DEF, MED, DEL to match formation slots
+  const formCount = FORMATIONS[formation].length; // always 11
+  const por = players.filter(p => p.pos === 'POR');
+  const def = players.filter(p => p.pos === 'DEF');
+  const med = players.filter(p => p.pos === 'MED');
+  const del = players.filter(p => p.pos === 'DEL');
+  // Parse formation to know how many of each
+  const parts = formation.split('-').map(Number);
+  let defCount, medCount, delCount;
+  if (parts.length === 3) { [defCount, medCount, delCount] = parts; }
+  else if (parts.length === 4) {
+    defCount = parts[0];
+    medCount = parts[1] + parts[2];
+    delCount = parts[3];
+  } else {
+    defCount = parts[0] || 4;
+    medCount = parts[1] || 3;
+    delCount = parts[parts.length-1] || 3;
+  }
+  const result = [
+    ...(por.slice(0,1)),
+    ...(def.slice(0, defCount)),
+    ...(med.slice(0, medCount)),
+    ...(del.slice(0, delCount)),
+  ];
+  // Fill remaining slots if needed
+  const all = [...por, ...def, ...med, ...del];
+  let idx = 0;
+  while (result.length < 11 && idx < all.length) {
+    if (!result.includes(all[idx])) result.push(all[idx]);
+    idx++;
+  }
+  return result.slice(0, 11);
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  ['home','away','all'].forEach(id => {
+    document.getElementById(`tab-${id}`).classList.toggle('active', f === id);
+  });
+  buildPlayerList();
+}
+
+function buildPlayerList() {
+  const q = document.getElementById('player-search').value.toLowerCase();
+  const list = document.getElementById('player-list');
+  list.innerHTML = '';
+
+  let teams = [];
+  if (activeFilter === 'home') teams = [homeTeam];
+  else if (activeFilter === 'away') teams = [awayTeam];
+  else teams = [homeTeam, awayTeam];
+
+  teams.forEach(teamKey => {
+    const team = TEAMS[teamKey];
+    if (activeFilter === 'all') {
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'padding:6px 14px 2px; font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1px;';
+      hdr.textContent = `${team.flag} ${teamKey.toUpperCase()}`;
+      list.appendChild(hdr);
+    }
+    team.players.forEach((p, idx) => {
+      if (q && !p.full.toLowerCase().includes(q) && !p.name.toLowerCase().includes(q)) return;
+      const isPlaced = placedPlayers.some(pp => pp.teamKey === teamKey && pp.playerIdx === idx);
+      const row = document.createElement('div');
+      row.className = 'player-row';
+      row.draggable = true;
+      row.dataset.team = teamKey;
+      row.dataset.idx = idx;
+      if (isPlaced) row.style.opacity = '0.4';
+      row.innerHTML = `
+        <span class="pnum">${p.n}</span>
+        <span class="pflag">${team.flag}</span>
+        <span class="pname">${p.full}</span>
+        <span class="ppos ${p.pos}">${p.pos}</span>
+      `;
+      row.addEventListener('dragstart', onDragStart);
+      row.addEventListener('dblclick', () => placePlayerCenter(teamKey, idx));
+      list.appendChild(row);
+    });
+  });
+}
+
+function filterPlayers() { buildPlayerList(); }
+
+// ── DRAG & DROP ──
+function onDragStart(e) {
+  const row = e.currentTarget;
+  draggedPlayerData = { teamKey: row.dataset.team, playerIdx: parseInt(row.dataset.idx) };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'player');
+}
+
+const pitchWrap = document.getElementById('pitch-wrap');
+pitchWrap.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+pitchWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  if (!draggedPlayerData) return;
+  const rect = pitchWrap.getBoundingClientRect();
+  const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+  const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+  placePlayer(draggedPlayerData.teamKey, draggedPlayerData.playerIdx, xPct, yPct);
+  draggedPlayerData = null;
+});
+
+function placePlayerCenter(teamKey, playerIdx) {
+  if (placedPlayers.some(pp => pp.teamKey === teamKey && pp.playerIdx === playerIdx)) return;
+  placePlayer(teamKey, playerIdx, 50, 50);
+}
+
+function placePlayer(teamKey, playerIdx, xPct, yPct, animate = true) {
+  if (placedPlayers.some(pp => pp.teamKey === teamKey && pp.playerIdx === playerIdx)) return;
+  const id = ++playerIdCounter;
+  const player = TEAMS[teamKey].players[playerIdx];
+  const team = TEAMS[teamKey];
+  const el = document.createElement('div');
+  el.className = 'player-token' + (animate ? ' just-placed' : '');
+  el.id = `pt-${id}`;
+  el.style.left = xPct + '%';
+  el.style.top = yPct + '%';
+  el.innerHTML = `
+    <div class="token-num" id="tnum-${id}">${player.n}</div>
+    <div class="token-shirt">${team.flag}</div>
+    <div class="token-name" id="tname-${id}">${player.name}</div>
+  `;
+  if (animate) setTimeout(() => el.classList.remove('just-placed'), 600);
+
+  // Token drag
+  el.addEventListener('mousedown', startTokenDrag);
+  el.addEventListener('contextmenu', e => { e.preventDefault(); showCtx(e, id); });
+
+  document.getElementById('players-layer').appendChild(el);
+  const entry = {id, teamKey, playerIdx, x:xPct, y:yPct, el};
+  placedPlayers.push(entry);
+  updateCounter();
+  buildPlayerList();
+  applyOptions();
+  if (voronoiActive) drawVoronoi();
+}
+
+function startTokenDrag(e) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  const id = parseInt(e.currentTarget.id.split('-')[1]);
+  const entry = placedPlayers.find(p => p.id === id);
+  if (!entry) return;
+  const pw = document.getElementById('pitch-wrap');
+  const rect = pw.getBoundingClientRect();
+
+  function onMove(ev) {
+    const x = ((ev.clientX - rect.left) / rect.width) * 100;
+    const y = ((ev.clientY - rect.top) / rect.height) * 100;
+    entry.x = Math.min(98, Math.max(2, x));
+    entry.y = Math.min(98, Math.max(2, y));
+    entry.el.style.left = entry.x + '%';
+    entry.el.style.top = entry.y + '%';
+    if (voronoiActive) drawVoronoi();
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function updateCounter() {
+  document.getElementById('players-placed').textContent = `ℹ ${placedPlayers.length} / 11 jugadores colocados`;
+}
+
+// ── FORMATION ──
+function setFormationTeam(t) {
+  formationTeamTarget = t;
+  ['home','away','both'].forEach(id => {
+    document.getElementById(`ftp-${id}`).classList.toggle('active', t === id);
+  });
+}
+
+function applyFormation(fname) {
+  currentFormation = fname;
+  document.getElementById('current-formation-label').textContent = fname;
+  document.getElementById('formation-select').value = fname;
+  document.getElementById('mini-label').textContent = fname;
+  renderMiniPitch();
+
+  const positions = FORMATIONS[fname];
+  // Determine which teams' placed players to reposition
+  const targets = formationTeamTarget === 'both'
+    ? [homeTeam, awayTeam]
+    : formationTeamTarget === 'home' ? [homeTeam] : [awayTeam];
+
+  targets.forEach(teamKey => {
+    const isAway = teamKey === awayTeam;
+    const teamPlaced = placedPlayers.filter(p => p.teamKey === teamKey);
+    teamPlaced.forEach((p, i) => {
+      if (i < positions.length) {
+        let [x, y] = positions[i];
+        if (isAway && formationTeamTarget !== 'home') x = 100 - x; // espejo X para visitante
+        p.x = x; p.y = y;
+        p.el.classList.add('voronoi-active');
+        p.el.style.left = x + '%';
+        p.el.style.top = y + '%';
+        setTimeout(() => p.el.classList.remove('voronoi-active'), 700);
+      }
+    });
+  });
+  if (voronoiActive) setTimeout(drawVoronoi, 400);
+}
+
+function openFormationEdit() {
+  document.getElementById('formation-select').focus();
+}
+
+let formIdx = FORMATION_KEYS.indexOf('4-3-3');
+function prevFormation() {
+  formIdx = (formIdx - 1 + FORMATION_KEYS.length) % FORMATION_KEYS.length;
+  applyFormation(FORMATION_KEYS[formIdx]);
+}
+function nextFormation() {
+  formIdx = (formIdx + 1) % FORMATION_KEYS.length;
+  applyFormation(FORMATION_KEYS[formIdx]);
+}
+
+function renderMiniPitch() {
+  const g = document.getElementById('mini-dots');
+  g.innerHTML = '';
+  const positions = FORMATIONS[currentFormation] || [];
+  positions.forEach(([px, py]) => {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    // mini pitch: x 0-120, y 0-80, field rect: x1,y1 -> x119,y79
+    const cx = 1 + (px / 100) * 118;
+    const cy = 1 + (py / 100) * 78;
+    circle.setAttribute('cx', cx);
+    circle.setAttribute('cy', cy);
+    circle.setAttribute('r', '3');
+    circle.setAttribute('fill', '#22c55e');
+    g.appendChild(circle);
+  });
+}
+
+// ── VORONOI ──
+function toggleVoronoi() {
+  voronoiActive = !voronoiActive;
+  const btn = document.getElementById('voronoi-btn');
+  const tbtn = document.getElementById('btn-voronoi');
+  btn.classList.toggle('primary', voronoiActive);
+  tbtn && tbtn.classList.toggle('active', voronoiActive);
+  const canvas = document.getElementById('voronoi-overlay');
+  if (voronoiActive) {
+    canvas.classList.add('visible');
+    drawVoronoi();
+  } else {
+    canvas.classList.remove('visible');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function drawVoronoi() {
+  const canvas = document.getElementById('voronoi-overlay');
+  const pw = document.getElementById('pitch-wrap');
+  const W = pw.offsetWidth;
+  const H = pw.offsetHeight;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  if (placedPlayers.length < 2) return;
+
+  const pts = placedPlayers.map(p => ({
+    x: (p.x / 100) * W,
+    y: (p.y / 100) * H,
+    teamKey: p.teamKey
+  }));
+
+  // Fortune's sweep via pixel coloring (fast enough for browser)
+  const imageData = ctx.createImageData(W, H);
+  const data = imageData.data;
+  const colors = {};
+  let colorIdx = 0;
+  const palette = [
+    [34,197,94,55],   // green
+    [59,130,246,55],  // blue
+    [239,68,68,55],   // red
+    [245,158,11,55],  // amber
+    [168,85,247,55],  // purple
+    [20,184,166,55],  // teal
+    [249,115,22,55],  // orange
+    [236,72,153,55],  // pink
+    [99,102,241,55],  // indigo
+    [16,185,129,55],  // emerald
+    [234,179,8,55],   // yellow
+  ];
+  pts.forEach(p => {
+    if (!(p.teamKey in colors)) {
+      colors[p.teamKey] = palette[colorIdx % palette.length];
+      colorIdx++;
+    }
+  });
+
+  for (let py = 0; py < H; py += 2) {
+    for (let px = 0; px < W; px += 2) {
+      let minDist = Infinity, minPt = null;
+      for (const p of pts) {
+        const d = (px-p.x)**2 + (py-p.y)**2;
+        if (d < minDist) { minDist = d; minPt = p; }
+      }
+      if (!minPt) continue;
+      const c = colors[minPt.teamKey];
+      for (let dy=0; dy<2; dy++) for (let dx=0; dx<2; dx++) {
+        const i = ((py+dy)*W + (px+dx)) * 4;
+        data[i]=c[0]; data[i+1]=c[1]; data[i+2]=c[2]; data[i+3]=c[3];
+      }
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  // Draw Voronoi edges
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 1;
+  for (let py = 1; py < H; py += 2) {
+    for (let px = 1; px < W; px += 2) {
+      let d1=Infinity, d2=Infinity, p1=null, p2=null;
+      for (const p of pts) {
+        const d = (px-p.x)**2 + (py-p.y)**2;
+        if (d < d1) { d2=d1; p2=p1; d1=d; p1=p; }
+        else if (d < d2) { d2=d; p2=p; }
+      }
+      if (p1 && p2 && Math.abs(Math.sqrt(d1)-Math.sqrt(d2)) < 3) {
+        ctx.beginPath();
+        ctx.arc(px,py,1,0,Math.PI*2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Draw player circles
+  pts.forEach(p => {
+    const c = colors[p.teamKey];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 22, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},0.9)`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+}
+
+// ── OPTIONS ──
+function toggleOption(key) {
+  options[key] = !options[key];
+  const sw = document.getElementById(`tog-${key}`);
+  sw.classList.toggle('off', !options[key]);
+  applyOptions();
+}
+
+function applyOptions() {
+  placedPlayers.forEach(p => {
+    const numEl = document.getElementById(`tnum-${p.id}`);
+    const nameEl = document.getElementById(`tname-${p.id}`);
+    const shirt = p.el.querySelector('.token-shirt');
+    if (numEl) numEl.style.display = options.numbers ? '' : 'none';
+    if (nameEl) nameEl.style.display = options.names ? '' : 'none';
+    if (shirt) shirt.textContent = options.flags ? TEAMS[p.teamKey].flag : '👕';
+  });
+}
+
+// ── CONTEXT MENU ──
+function showCtx(e, id) {
+  ctxTarget = id;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+}
+function hideCtx() {
+  document.getElementById('ctx-menu').style.display = 'none';
+  ctxTarget = null;
+}
+function ctxEdit() {
+  hideCtx();
+}
+function ctxReturn() {
+  if (!ctxTarget) return;
+  removeToken(ctxTarget);
+  hideCtx();
+}
+function ctxRemove() {
+  if (!ctxTarget) return;
+  removeToken(ctxTarget);
+  hideCtx();
+}
+function removeToken(id) {
+  const idx = placedPlayers.findIndex(p => p.id === id);
+  if (idx < 0) return;
+  placedPlayers[idx].el.remove();
+  placedPlayers.splice(idx, 1);
+  updateCounter();
+  buildPlayerList();
+  if (voronoiActive) drawVoronoi();
+}
+
+// ── CLEAR ──
+function clearPitch() {
+  placedPlayers.forEach(p => p.el.remove());
+  placedPlayers = [];
+  updateCounter();
+  buildPlayerList();
+  const canvas = document.getElementById('voronoi-overlay');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  voronoiActive = false;
+  document.getElementById('voronoi-btn').classList.remove('primary');
+  document.getElementById('btn-voronoi').classList.remove('active');
+  canvas.classList.remove('visible');
+}
+
+// ── ZOOM ──
+function zoomIn() { zoom = Math.min(zoom+10, 150); applyZoom(); }
+function zoomOut() { zoom = Math.max(zoom-10, 60); applyZoom(); }
+function applyZoom() {
+  document.getElementById('zoom-val').textContent = zoom + '%';
+  document.getElementById('players-layer').style.transform = `scale(${zoom/100})`;
+  document.getElementById('players-layer').style.transformOrigin = 'center center';
+}
+
+// ── TOOLS ──
+function toggleArrows() {
+  arrowsMode = !arrowsMode;
+  document.getElementById('btn-arrows').classList.toggle('active', arrowsMode);
+}
+function toggleZones() {
+  zonesMode = !zonesMode;
+  document.getElementById('btn-zones').classList.toggle('active', zonesMode);
+  drawZones();
+}
+function drawZones() {
+  // Could add zone lines overlay - omit for brevity
+}
+
+// ── VIEW 2D / 3D ──
+function setView2D() {
+  document.getElementById('view-3d-overlay').classList.remove('active');
+  document.getElementById('vbtn-2d').classList.add('active');
+  document.getElementById('vbtn-3d').classList.remove('active');
+}
+
+function setView3D() {
+  document.getElementById('vbtn-3d').classList.add('active');
+  document.getElementById('vbtn-2d').classList.remove('active');
+  render3DPitch();
+  document.getElementById('view-3d-overlay').classList.add('active');
+}
+
+function render3DPitch() {
+  const canvas = document.getElementById('pitch-3d-canvas');
+  const w = canvas.parentElement.offsetWidth || 600;
+  canvas.width = w;
+  canvas.height = Math.round(w * 0.7);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // Grass background
+  const grad = ctx.createRadialGradient(W/2,H/2,20,W/2,H/2,Math.max(W,H)*0.7);
+  grad.addColorStop(0,'#1a5c28');
+  grad.addColorStop(0.5,'#14471f');
+  grad.addColorStop(1,'#0f3518');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  // Grass stripes
+  for (let i=0; i<10; i++) {
+    ctx.fillStyle = i%2===0 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.03)';
+    ctx.fillRect(0, i*(H/10), W, H/10);
+  }
+
+  const lc = 'rgba(255,255,255,0.75)';
+  const lw = 2;
+  ctx.strokeStyle = lc; ctx.lineWidth = lw;
+
+  // Field border
+  const m=18;
+  ctx.strokeRect(m, m, W-m*2, H-m*2);
+
+  // Center line
+  ctx.beginPath(); ctx.moveTo(m, H/2); ctx.lineTo(W-m, H/2); ctx.stroke();
+
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, Math.min(W,H)*0.12, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2, H/2, 3, 0, Math.PI*2);
+  ctx.fillStyle=lc; ctx.fill();
+
+  const pw = (W-m*2);
+  const ph = (H-m*2);
+
+  // Top penalty area
+  const paW = pw*0.57, paH = ph*0.19;
+  ctx.strokeRect(m+(pw-paW)/2, m, paW, paH);
+  // Top goal area
+  const gaW = pw*0.3, gaH = ph*0.08;
+  ctx.strokeRect(m+(pw-gaW)/2, m, gaW, gaH);
+  // Top goal
+  const gW = pw*0.18, gH = ph*0.03;
+  ctx.strokeRect(m+(pw-gW)/2, m-gH, gW, gH);
+  // Top penalty spot
+  ctx.beginPath(); ctx.arc(W/2, m+paH*0.6, 3, 0, Math.PI*2); ctx.fill();
+
+  // Bottom penalty area
+  ctx.strokeRect(m+(pw-paW)/2, H-m-paH, paW, paH);
+  // Bottom goal area
+  ctx.strokeRect(m+(pw-gaW)/2, H-m-gaH, gaW, gaH);
+  // Bottom goal
+  ctx.strokeRect(m+(pw-gW)/2, H-m, gW, gH);
+  // Bottom penalty spot
+  ctx.beginPath(); ctx.arc(W/2, H-m-paH*0.6, 3, 0, Math.PI*2); ctx.fill();
+
+  // Render players
+  const playersDiv = document.getElementById('pitch-3d-players');
+  playersDiv.innerHTML = '';
+  playersDiv.style.cssText = `position:absolute;inset:0;`;
+  placedPlayers.forEach(p => {
+    const player = TEAMS[p.teamKey].players[p.playerIdx];
+    const team = TEAMS[p.teamKey];
+    const token = document.createElement('div');
+    token.className = 'token-3d';
+    token.style.left = p.x + '%';
+    token.style.top = p.y + '%';
+    token.innerHTML = `
+      <div class="t3-shirt">${team.flag}</div>
+      <div class="t3-num">${player.n}</div>
+      <div class="t3-name">${player.name}</div>
+    `;
+    playersDiv.appendChild(token);
+  });
+}
+
+// ── ANALYZE ──
+function analyzeTactic() {
+  if (placedPlayers.length === 0) return;
+  const teams = {};
+  placedPlayers.forEach(p => {
+    if (!teams[p.teamKey]) teams[p.teamKey] = [];
+    teams[p.teamKey].push(TEAMS[p.teamKey].players[p.playerIdx]);
+  });
+  let msg = '📊 Análisis táctico:\n\n';
+  Object.entries(teams).forEach(([key, players]) => {
+    const por = players.filter(p=>p.pos==='POR').length;
+    const def = players.filter(p=>p.pos==='DEF').length;
+    const med = players.filter(p=>p.pos==='MED').length;
+    const del = players.filter(p=>p.pos==='DEL').length;
+    msg += `${TEAMS[key].flag} ${key}: ${por>0?`${por}P-`:''}${def}-${med}-${del}\n`;
+  });
+  alert(msg);
+}
+
+// ── THEME ──
+function toggleTheme() {
+  isLightMode = !isLightMode;
+  document.body.classList.toggle('light-mode', isLightMode);
+  document.getElementById('theme-light').classList.toggle('active', isLightMode);
+  document.getElementById('theme-dark').classList.toggle('active', !isLightMode);
+}
+
+// ── BRIGHTNESS ──
+function setBrightness(val) {
+  document.documentElement.style.setProperty('--pitch-brightness', val);
+}
+
+// ── SAVE / SHARE (screenshot) ──
+async function capturePitch() {
+  // Use html2canvas if available; otherwise fallback to SVG snapshot
+  const pitchWrap = document.getElementById('pitch-wrap');
+
+  // Build a canvas snapshot manually
+  const pw = pitchWrap.offsetWidth;
+  const ph = pitchWrap.offsetHeight;
+  const canvas = document.createElement('canvas');
+  const scale = 2;
+  canvas.width = pw * scale;
+  canvas.height = ph * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  // Draw pitch background gradient
+  const bv = parseFloat(document.documentElement.style.getPropertyValue('--pitch-brightness') || '1');
+  ctx.filter = `brightness(${bv})`;
+  const grad = ctx.createRadialGradient(pw/2, ph/2, 20, pw/2, ph/2, Math.max(pw,ph)*0.7);
+  grad.addColorStop(0,'#1a5c28');
+  grad.addColorStop(0.5,'#14471f');
+  grad.addColorStop(1,'#0f3518');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, pw, ph);
+  ctx.filter = 'none';
+
+  // Grass stripes
+  for (let i = 0; i < 20; i++) {
+    ctx.fillStyle = i%2===0 ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.03)';
+    ctx.fillRect(0, i*(ph/20), pw, ph/20);
+  }
+
+  // Draw pitch lines — cancha horizontal (viewBox 1020x680)
+  const sx = pw/1020, sy = ph/680;
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+  ctx.lineWidth = 2;
+
+  function line(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1*sx,y1*sy);ctx.lineTo(x2*sx,y2*sy);ctx.stroke();}
+  function rect(x,y,w,h){ctx.strokeRect(x*sx,y*sy,w*sx,h*sy);}
+  function dot(cx,cy,r=3){ctx.beginPath();ctx.arc(cx*sx,cy*sy,r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fill();}
+
+  // Field border
+  rect(20,30,980,620);
+  // Center line
+  line(510,30,510,650);
+  // Center circle
+  ctx.beginPath();ctx.arc(510*sx,340*sy,91*Math.min(sx,sy),0,Math.PI*2);ctx.stroke();
+  dot(510,340);
+  // Left penalty area
+  rect(20,145,130,390);
+  rect(20,240,55,200);
+  rect(8,280,18,120);
+  dot(130,340);
+  ctx.beginPath();ctx.arc(150*sx,340*sy,91*Math.min(sx,sy),-Math.PI/2+0.35,Math.PI/2-0.35,false);ctx.stroke();
+  // Right penalty area
+  rect(870,145,130,390);
+  rect(945,240,55,200);
+  rect(994,280,18,120);
+  dot(890,340);
+  ctx.beginPath();ctx.arc(870*sx,340*sy,91*Math.min(sx,sy),Math.PI/2+0.35,Math.PI*1.5-0.35,false);ctx.stroke();
+  // Grass stripes (vertical on horizontal pitch)
+  for (let i = 0; i < 20; i++) {
+    ctx.fillStyle = i%2===0 ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.02)';
+    ctx.fillRect(i*(pw/20), 0, pw/20, ph);
+  }
+
+  // Draw players
+  placedPlayers.forEach(p => {
+    const player = TEAMS[p.teamKey].players[p.playerIdx];
+    const team = TEAMS[p.teamKey];
+    const x = (p.x / 100) * pw;
+    const y = (p.y / 100) * ph;
+
+    // Shirt circle
+    ctx.beginPath();
+    ctx.arc(x, y, 22, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(15,34,55,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Number
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px Segoe UI,Arial,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(player.n, x, y);
+
+    // Name label
+    const nameY = y + 28;
+    ctx.font = 'bold 9px Segoe UI,Arial,sans-serif';
+    const tw = ctx.measureText(player.name).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.78)';
+    ctx.beginPath();
+    ctx.roundRect(x - tw/2 - 4, nameY - 7, tw + 8, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillText(player.name, x, nameY);
+
+    // Flag emoji above
+    ctx.font = '14px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(team.flag, x, y - 14);
+  });
+
+  // Watermark
+  ctx.font = 'bold 14px Segoe UI,Arial,sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(`⚽ Fútbol Lab • Mundial 2026 • ${homeTeam} vs ${awayTeam}`, 12, ph - 6);
+
+  return canvas;
+}
+
+async function saveLineup() {
+  try {
+    const canvas = await capturePitch();
+    const link = document.createElement('a');
+    link.download = `futbol-lab-${homeTeam}-vs-${awayTeam}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('Error al guardar: ' + e.message);
+  }
+}
+
+async function shareLineup() {
+  try {
+    const canvas = await capturePitch();
+    canvas.toBlob(async blob => {
+      const file = new File([blob], `futbol-lab-${homeTeam}-vs-${awayTeam}.png`, {type:'image/png'});
+      if (navigator.canShare && navigator.canShare({files:[file]})) {
+        await navigator.share({
+          title: `⚽ Fútbol Lab • ${homeTeam} vs ${awayTeam}`,
+          text: `Formación: ${currentFormation} • Mundial 2026`,
+          files: [file]
+        });
+      } else {
+        // Fallback: open image in new tab
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+    }, 'image/png');
+  } catch(e) {
+    alert('Error al compartir: ' + e.message);
+  }
+}
+
+function renderPlaced() {} // placeholder
+
+// ── RUN ──
+init();
+window.addEventListener('resize', () => { if (voronoiActive) drawVoronoi(); });
+</script>
+</body>
+</html>
